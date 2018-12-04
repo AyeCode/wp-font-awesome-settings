@@ -180,8 +180,8 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 			$url = "https://use.fontawesome.com/releases/"; // CDN
 			$url .= !empty($version) ? "v".$version.'/' : "v".$this->latest.'/'; // version
-			$url .= $type=='css' ? 'css/' : 'js/'; // type
-			$url .= $type=='css' ? $script.'.css' : $script.'.js'; // type
+			$url .= $type=='CSS' ? 'css/' : 'js/'; // type
+			$url .= $type=='CSS' ? $script.'.css' : $script.'.js'; // type
 			$url .= "?wpfas=true"; // set our var so our version is not removed
 
 			return $url;
