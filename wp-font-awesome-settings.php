@@ -225,8 +225,6 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 */
 		public function register_settings() {
 			register_setting( 'wp-font-awesome-settings', 'wp-font-awesome-settings' );
-			register_setting( 'wp-font-awesome-settings', 'some_other_option' );
-			register_setting( 'wp-font-awesome-settings', 'option_etc' );
 		}
 
 		/**
@@ -362,4 +360,3 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 	 */
 	WP_Font_Awesome_Settings::instance();
 }
-
