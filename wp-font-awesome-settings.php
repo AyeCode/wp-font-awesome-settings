@@ -200,7 +200,10 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 */
 		public function remove_font_awesome($url, $original_url, $_context){
 
-			if ($_context=='display' &&  strstr( $url, "fontawesome" ) !== false || strstr( $url, "font-awesome" ) !== false ) {// it's a font-awesome-url (probably)
+			if ($_context=='display'
+			    &&  ( strstr( $url, "fontawesome" ) !== false || strstr( $url, "font-awesome" ) !== false )
+			    &&  ( strstr( $url, ".js" ) !== false || strstr( $url, ".css" ) !== false )
+			) {// it's a font-awesome-url (probably)
 
 				if(strstr( $url, "wpfas=true" ) !== false){
 					if($this->settings['type']=='JS'){
