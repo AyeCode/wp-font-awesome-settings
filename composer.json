@@ -1,5 +1,5 @@
 {
-  "name": "AyeCode/wp-font-awesome-settings",
+  "name": "ayecode/wp-font-awesome-settings",
   "version": "1.0.0",
   "type": "wordpress-dropin",
   "description": "Settings page for Font Awesome in WordPress",
