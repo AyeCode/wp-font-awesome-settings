@@ -5,7 +5,7 @@
   "description": "Settings page for Font Awesome in WordPress",
   "keywords": ["font-awesome","fontawesome"],
   "homepage": "https://github.com/AyeCode/wp-font-awesome-settings",
-  "license": "GPLv3",
+  "license": "GPL-3.0-or-later",
   "authors": [
     {
       "name": "AyeCode Ltd",
