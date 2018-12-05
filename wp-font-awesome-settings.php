@@ -7,7 +7,7 @@
  * @link https://github.com/AyeCode/wp-font-awesome-settings
  *
  * @internal This file should not be edited directly but pulled from the github repo above.
- * @version 1.0.0
+ * @version 1.0.6
  */
 
 /**
@@ -36,7 +36,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '1.0.0';
+		public $version = '1.0.6';
 
 		/**
 		 * Latest version of Font Awesome when published.
