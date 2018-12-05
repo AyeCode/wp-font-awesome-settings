@@ -2,6 +2,21 @@
   "name": "AyeCode/wp-font-awesome-settings",
   "version": "1.0.0",
   "type": "wordpress-dropin",
+  "description": "Settings page for Font Awesome in WordPress",
+  "keywords": ["font-awesome","fontawesome"],
+  "homepage": "https://github.com/AyeCode/wp-font-awesome-settings",
+  "license": "GPLv3",
+  "authors": [
+    {
+      "name": "AyeCode Ltd",
+      "email": "contact@ayecode.io",
+      "homepage": "https://ayecode.io/",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=5.3.0"
+  },
   "require-dev": {
     "squizlabs/php_codesniffer": "^3.2",
     "dealerdirect/phpcodesniffer-composer-installer": "*",

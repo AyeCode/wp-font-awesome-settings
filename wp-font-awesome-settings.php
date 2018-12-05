@@ -355,6 +355,23 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			<?php
 		}
 
+		/**
+		 * Check a version number is valid and if so return it or else return an empty string.
+		 *
+		 * @param $version string The version number to check.
+		 *
+		 * @return string Either a valid version number or an empty string.
+		 */
+		public function validate_version_number($version){
+
+			if( version_compare( $version, '0.0.1', '>=' ) >= 0 ) {
+				// valid
+			} else {
+				$version = '';// not validated
+			}
+			return $version;
+		}
+
 
 	}
 
