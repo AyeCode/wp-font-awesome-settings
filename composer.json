@@ -1,6 +1,6 @@
 {
   "name": "ayecode/wp-font-awesome-settings",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "type": "library",
   "description": "Settings page for Font Awesome in WordPress",
   "keywords": ["font-awesome","fontawesome"],
