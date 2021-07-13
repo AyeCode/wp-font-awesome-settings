@@ -29,7 +29,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 	 * @since 1.0.11 Font Awesome Pro now supported.
 	 * @since 1.0.11 Font Awesome Kits now supported.
 	 * @since 1.0.13 RTL language support added.
-	 * @ver 1.0.11
+	 * @ver 1.0.13
 	 * @todo decide how to implement textdomain
 	 */
 	class WP_Font_Awesome_Settings {
@@ -39,7 +39,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '1.0.12';
+		public $version = '1.0.13';
 
 		/**
 		 * Class textdomain.
