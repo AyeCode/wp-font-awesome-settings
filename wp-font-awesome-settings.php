@@ -310,7 +310,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				wp_die( __( 'You do not have sufficient permissions to access this page.', 'font-awesome-settings' ) );
 			}
 
-			// a hidden way to force the update of the venison number via api instead of waiting the 48 hours
+			// a hidden way to force the update of the version number via api instead of waiting the 48 hours
 			if ( isset( $_REQUEST['force-version-check'] ) ) {
 				$this->get_latest_version( $force_api = true );
 			}
