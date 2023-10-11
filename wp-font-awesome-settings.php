@@ -35,8 +35,8 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 	 * @since 1.1.1 Requires to re-save settings to load locally when option does not exists - FIXED.
 	 * @since 1.1.2 Bumped the latest version to 6.3.0 - CHANGED.
      * @since 1.1.3 Added JS files for iconpicker and added constant for URL for AyeCode-UI - ADDED.
-     * @since 1.1.4 Added constant for when pro enabled - ADDED.
-	 * @ver 1.1.4
+     * @since 1.1.5 Added constant for when pro enabled - ADDED.
+	 * @ver 1.1.5
 	 * @todo decide how to implement textdomain
 	 */
 	class WP_Font_Awesome_Settings {
@@ -46,7 +46,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '1.1.4';
+		public $version = '1.1.5';
 
 		/**
 		 * Class textdomain.
