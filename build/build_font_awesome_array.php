@@ -240,7 +240,7 @@ function get_font_awesome_data($v = 6, $pro = false ) {
 }
 
 //echo get_font_awesome_data(5 );
-//echo get_font_awesome_data(6 );
-echo get_font_awesome_data(5, true );
+echo get_font_awesome_data(6 );
+//echo get_font_awesome_data(5, true );
 //echo get_font_awesome_data(6, true );
 exit;

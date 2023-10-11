@@ -35,7 +35,8 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 	 * @since 1.1.1 Requires to re-save settings to load locally when option does not exists - FIXED.
 	 * @since 1.1.2 Bumped the latest version to 6.3.0 - CHANGED.
      * @since 1.1.3 Added JS files for iconpicker and added constant for URL for AyeCode-UI - ADDED.
-	 * @ver 1.1.2
+     * @since 1.1.4 Added constant for when pro enabled - ADDED.
+	 * @ver 1.1.4
 	 * @todo decide how to implement textdomain
 	 */
 	class WP_Font_Awesome_Settings {
@@ -45,7 +46,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '1.1.3';
+		public $version = '1.1.4';
 
 		/**
 		 * Class textdomain.
@@ -122,17 +123,21 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			// register iconpicker constant
 			if ( ! defined( 'FAS_ICONPICKER_JS_URL' ) ) {
 				$url = $this->get_path_url();
-				$sub     = $this->settings['pro'] ? '-pro' : '';
 				$version = $this->settings['version'];
 
 				if( !$version || version_compare($version,'5.999','>')){
-					$url .= 'assets/js/fa-iconpicker-v6'.$sub.'.min.js';
+					$url .= 'assets/js/fa-iconpicker-v6.min.js';
 				}else{
-					$url .= 'assets/js/fa-iconpicker-v5'.$sub.'.min.js';
+					$url .= 'assets/js/fa-iconpicker-v5.min.js';
 				}
 
 				define( 'FAS_ICONPICKER_JS_URL', $url );
 
+			}
+
+            // Set a constant if pro enbaled
+			if ( ! defined( 'FAS_PRO' ) && $this->settings['pro'] ) {
+				define( 'FAS_PRO', true );
 			}
 		}
 
