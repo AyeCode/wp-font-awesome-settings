@@ -10,4 +10,5 @@ phpunit.xml export-ignore
 README.md export-ignore
 /tests/ export-ignore
 /vendor/ export-ignore
+/build/ export-ignore
 /.idea/ export-ignore
