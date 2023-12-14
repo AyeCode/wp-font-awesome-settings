@@ -1,4 +1,4 @@
-= 1.1.7 =
+= 1.1.7 - 2023-12-14 =
 * Update textdomain - CHANGED
 
 = 1.1.6 =
