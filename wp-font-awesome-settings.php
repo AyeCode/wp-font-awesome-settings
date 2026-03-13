@@ -33,7 +33,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '1.1.10';
+		public $version = '2.0.0';
 
 		/**
 		 * Class textdomain.
@@ -61,7 +61,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var array
 		 */
-		private $settings;
+		public $settings;
 
 
 	/**
@@ -165,7 +165,13 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		if ( is_admin() && ! $this->settings_framework ) {
 			require_once dirname( __FILE__ ) . '/src/Settings.php';
 			$this->settings_framework = new WP_Font_Awesome_Settings_Framework( $this );
+
+			// Register AJAX handlers for SVG loader.
+			add_action( 'wp_ajax_ayecode_fa_clear_cache', array( $this, 'ajax_clear_svg_cache' ) );
 		}
+
+		// Register custom icons library for iconpicker.
+		add_filter( 'aui_iconpicker_libraries', array( $this, 'register_custom_icons_library' ) );
 
 			add_action( 'add_option_wp-font-awesome-settings', array( $this, 'add_option_wp_font_awesome_settings' ), 10, 2 );
 			add_action( 'update_option_wp-font-awesome-settings', array( $this, 'update_option_wp_font_awesome_settings' ), 10, 2 );
@@ -174,45 +180,50 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 			// Check if the official plugin is active and use that instead if so.
 			if ( ! defined( 'FONTAWESOME_PLUGIN_FILE' ) ) {
+				// Always add generator in admin.
 				if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
 					add_action( 'admin_head', array( $this, 'add_generator' ), 99 );
 				}
 
-				if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) {
+				// Frontend generator - skip if SVG mode.
+				if ( $this->settings['type'] != 'SVG' && ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) ) {
 					add_action( 'wp_head', array( $this, 'add_generator' ), 99 );
 				}
 
-				if ( $this->settings['type'] == 'CSS' ) {
-					if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) {
-						add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
-						//add_action( 'wp_footer', array( $this, 'enqueue_style' ), 5000 ); // not sure why this was added, seems to break frontend
-					}
-
-					if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
-						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
-						add_filter( 'block_editor_settings_all', array( $this, 'enqueue_editor_styles' ), 10, 2 );
-					}
-				} else {
-					$enqueue = false;
-
-					if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) {
-						$enqueue = true;
-						add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
-					}
-
-					if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
-						$enqueue = true;
-						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
-						add_filter( 'block_editor_settings_all', array( $this, 'enqueue_editor_scripts' ), 10, 2 );
-					}
-
-					if ( $enqueue ) {
-						add_filter( 'script_loader_tag', array( $this, 'script_loader_tag' ), 20, 3 );
+				// Frontend loading - skip if SVG mode.
+				if ( $this->settings['type'] != 'SVG' ) {
+					if ( $this->settings['type'] == 'CSS' ) {
+						if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) {
+							add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
+						}
+					} elseif ( $this->settings['type'] != 'SVG' ) {
+						// JS or KIT on frontend.
+						if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'frontend' ) {
+							add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
+						}
 					}
 				}
 
-				// remove font awesome if set to do so
-				if ( $this->settings['dequeue'] == '1' ) {
+				// Backend always loads (CSS or JS based on type).
+				if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
+					// Use CSS for backend when frontend is SVG or CSS.
+					if ( $this->settings['type'] == 'CSS' || $this->settings['type'] == 'SVG' ) {
+						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
+						add_action( 'enqueue_block_assets', array( $this, 'enqueue_style_admin_only' ), 5000 );
+					} else {
+						// JS or KIT.
+						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
+						add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts_admin_only' ), 5000 );
+					}
+				}
+
+				// Script loader tag filter (for JS/KIT only).
+				if ( $this->settings['type'] == 'JS' || $this->settings['type'] == 'KIT' ) {
+					add_filter( 'script_loader_tag', array( $this, 'script_loader_tag' ), 20, 3 );
+				}
+
+				// Remove font awesome if set to do so (not applicable to SVG mode).
+				if ( $this->settings['type'] != 'SVG' && $this->settings['dequeue'] == '1' ) {
 					add_action( 'clean_url', array( $this, 'remove_font_awesome' ), 5000, 3 );
 				}
 			}
@@ -279,6 +290,24 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		}
 
 		/**
+		 * Wrapper for enqueue_style that only runs in admin (for block editor).
+		 */
+		public function enqueue_style_admin_only() {
+			if ( is_admin() ) {
+				$this->enqueue_style();
+			}
+		}
+
+		/**
+		 * Wrapper for enqueue_scripts that only runs in admin (for block editor).
+		 */
+		public function enqueue_scripts_admin_only() {
+			if ( is_admin() ) {
+				$this->enqueue_scripts();
+			}
+		}
+
+		/**
 		 * Adds the Font Awesome JS.
 		 */
 		public function enqueue_scripts() {
@@ -332,8 +361,10 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 					$url .= "https://$sub.fontawesome.com/releases/"; // CDN
 					$url .= ! empty( $version ) ? "v" . $version . '/' : "v" . $this->get_latest_version() . '/'; // version
 				}
-				$url .= $type == 'CSS' ? 'css/' : 'js/'; // type
-				$url .= $type == 'CSS' ? $script . '.css' : $script . '.js'; // type
+				// SVG type uses CSS files (for admin compatibility)
+				$use_css = ( $type == 'CSS' || $type == 'SVG' );
+				$url .= $use_css ? 'css/' : 'js/'; // type
+				$url .= $use_css ? $script . '.css' : $script . '.js'; // type
 				$url .= "?wpfas=true" . $v; // set our var so our version is not removed
 			}
 
@@ -517,6 +548,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 					<?php
 				}
 			} else {
+                /*
 				if ( ! empty( $settings ) ) {
 					if ( $settings['type'] != 'KIT' && $settings['pro'] && ( $settings['version'] == '' || version_compare( $settings['version'], '6', '>=' ) ) ) {
 						$link = admin_url('options-general.php?page=wp-font-awesome-settings');
@@ -526,7 +558,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
                         </div>
 						<?php
 					}
-				}
+				}*/
 			}
 		}
 
@@ -794,6 +826,193 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		}
 
 		/**
+		 * AJAX handler to clear SVG icon cache.
+		 *
+		 * @since 2.0.0
+		 */
+		public function ajax_clear_svg_cache() {
+			// Verify nonce.
+			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_clear_cache' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
+			}
+
+			// Check user capabilities.
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
+			}
+
+			// Clear the cache.
+			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$result     = $svg_loader->clear_icon_cache();
+
+			if ( is_wp_error( $result ) ) {
+				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+			}
+
+			wp_send_json_success( array( 'message' => __( 'Icon cache cleared successfully.', 'font-awesome-settings' ) ) );
+		}
+
+		/**
+		 * AJAX handler to upload custom SVG icons.
+		 *
+		 * @since 2.0.0
+		 */
+		public function ajax_upload_custom_svg() {
+			// Verify nonce.
+			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_upload_svg' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
+			}
+
+			// Check user capabilities.
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
+			}
+
+			// Check if files were uploaded.
+			if ( empty( $_FILES['svg_files'] ) ) {
+				wp_send_json_error( array( 'message' => __( 'No files uploaded.', 'font-awesome-settings' ) ) );
+			}
+
+			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$custom_dir = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR;
+
+			// Ensure custom directory exists.
+			if ( ! file_exists( $custom_dir ) ) {
+				wp_mkdir_p( $custom_dir );
+			}
+
+			$files          = $_FILES['svg_files'];
+			$uploaded_count = 0;
+			$errors         = array();
+
+			// Handle multiple files.
+			if ( is_array( $files['name'] ) ) {
+				foreach ( $files['name'] as $key => $filename ) {
+					// Validate file extension.
+					$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+					if ( 'svg' !== $ext ) {
+						$errors[] = sprintf( __( '%s is not an SVG file.', 'font-awesome-settings' ), $filename );
+						continue;
+					}
+
+					// Sanitize filename.
+					$filename = sanitize_file_name( $filename );
+					$filepath = $custom_dir . $filename;
+
+					// Read file content.
+					$svg_content = file_get_contents( $files['tmp_name'][ $key ] );
+
+					// Basic SVG validation - check if it contains <svg> tag.
+					if ( false === strpos( $svg_content, '<svg' ) ) {
+						$errors[] = sprintf( __( '%s does not appear to be a valid SVG file.', 'font-awesome-settings' ), $filename );
+						continue;
+					}
+
+					// Sanitize SVG content using our sanitization method.
+					$svg_content = $this->sanitize_uploaded_svg( $svg_content );
+
+					// Save file.
+					$result = file_put_contents( $filepath, $svg_content );
+
+					if ( false === $result ) {
+						$errors[] = sprintf( __( 'Failed to save %s.', 'font-awesome-settings' ), $filename );
+						continue;
+					}
+
+					$uploaded_count++;
+				}
+			}
+
+			if ( $uploaded_count > 0 ) {
+				$message = sprintf(
+					_n( '%d icon uploaded successfully.', '%d icons uploaded successfully.', $uploaded_count, 'font-awesome-settings' ),
+					$uploaded_count
+				);
+
+				if ( ! empty( $errors ) ) {
+					$message .= ' ' . __( 'Some files had errors:', 'font-awesome-settings' ) . ' ' . implode( ' ', $errors );
+				}
+
+				wp_send_json_success( array( 'message' => $message ) );
+			} else {
+				wp_send_json_error( array( 'message' => __( 'Upload failed: ', 'font-awesome-settings' ) . implode( ' ', $errors ) ) );
+			}
+		}
+
+		/**
+		 * AJAX handler to delete custom SVG icon.
+		 *
+		 * @since 2.0.0
+		 */
+		public function ajax_delete_custom_svg() {
+			// Verify nonce.
+			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_delete_svg' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
+			}
+
+			// Check user capabilities.
+			if ( ! current_user_can( 'manage_options' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
+			}
+
+			// Get icon name.
+			$name = isset( $_POST['name'] ) ? sanitize_file_name( $_POST['name'] ) : '';
+			if ( empty( $name ) ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid icon name.', 'font-awesome-settings' ) ) );
+			}
+
+			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$filepath   = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR . $name . '.svg';
+
+			// Check if file exists.
+			if ( ! file_exists( $filepath ) ) {
+				wp_send_json_error( array( 'message' => __( 'Icon file not found.', 'font-awesome-settings' ) ) );
+			}
+
+			// Delete the file.
+			$result = unlink( $filepath );
+
+			if ( ! $result ) {
+				wp_send_json_error( array( 'message' => __( 'Failed to delete icon.', 'font-awesome-settings' ) ) );
+			}
+
+			// Clear object cache for this icon.
+			wp_cache_delete( 'ayecode_icon_custom_' . $name, 'ayecode_icons' );
+
+			wp_send_json_success( array( 'message' => __( 'Icon deleted successfully.', 'font-awesome-settings' ) ) );
+		}
+
+		/**
+		 * Sanitize uploaded SVG content.
+		 *
+		 * Applies same sanitization as SVG_Loader but without ID normalization.
+		 *
+		 * @param string $svg SVG content.
+		 *
+		 * @return string Sanitized SVG.
+		 * @since 2.0.0
+		 */
+		private function sanitize_uploaded_svg( string $svg ): string {
+			// Remove script tags.
+			$svg = preg_replace( '/<script\b[^>]*>.*?<\/script>/is', '', $svg );
+
+			// Remove dangerous tags.
+			$dangerous_tags = array( 'iframe', 'embed', 'object', 'foreignObject' );
+			foreach ( $dangerous_tags as $tag ) {
+				$svg = preg_replace( '/<' . $tag . '\b[^>]*>.*?<\/' . $tag . '>/is', '', $svg );
+				$svg = preg_replace( '/<' . $tag . '\b[^>]*\/>/is', '', $svg );
+			}
+
+			// Remove event handler attributes.
+			$svg = preg_replace( '/\s+on\w+\s*=\s*["\'].*?["\']/is', '', $svg );
+
+			// Remove javascript: protocol.
+			$svg = preg_replace( '/\s+href\s*=\s*["\']javascript:.*?["\']/is', '', $svg );
+
+			return $svg;
+		}
+
+		/**
 		 * Output the version in the header.
 		 */
 		public function add_generator() {
@@ -839,6 +1058,24 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 			return $tag;
 		}
+
+		/**
+		 * Register custom icons library for AUI iconpicker.
+		 *
+		 * Adds custom-icons.json to the iconpicker libraries array if custom icons exist.
+		 *
+		 * @param array $libraries Array of icon library URLs.
+		 * @return array Modified libraries array.
+		 */
+		public function register_custom_icons_library( $libraries ) {
+			// Only add if custom icons exist.
+			if ( ayecode_get_custom_icon_count() > 0 ) {
+				$upload_dir = wp_upload_dir( null, false );
+				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/custom-icons.json';
+			}
+
+			return $libraries;
+		}
 	}
 
 	/**
@@ -846,3 +1083,22 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 	 */
 	WP_Font_Awesome_Settings::instance();
 }
+
+/**
+ * Load SVG Loader class.
+ */
+if ( ! class_exists( 'AyeCode_Font_Awesome_SVG_Loader' ) ) {
+	require_once dirname( __FILE__ ) . '/src/SVG_Loader.php';
+}
+
+/**
+ * Load Custom Icons helper class.
+ */
+if ( ! class_exists( 'WP_Font_Awesome_Custom_Icons' ) ) {
+	require_once dirname( __FILE__ ) . '/src/Custom_Icons.php';
+}
+
+/**
+ * Load global helper functions.
+ */
+require_once dirname( __FILE__ ) . '/src/functions.php';
