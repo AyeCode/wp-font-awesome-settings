@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Automatically renders icons based on the configured Type setting:
  * - Type = SVG: Outputs inline SVG markup with JIT loading and caching (frontend only)
  * - Type = CSS/JS/KIT: Outputs <i> tag for webfont/JavaScript rendering
+ * - Custom icons: Always outputs inline SVG regardless of Type setting
  *
  * Note: This function is intended for frontend use only. The backend loads Font Awesome CSS
  * normally and uses standard <i> tags regardless of the Type setting.
@@ -40,44 +41,49 @@ if ( ! defined( 'ABSPATH' ) ) {
 function ayecode_get_icon( string $identifier, array $options = array() ): string {
     $settings = WP_Font_Awesome_Settings::instance()->settings;
 
-    // If type is SVG, render inline SVG
-    if ( isset( $settings['type'] ) && $settings['type'] === 'SVG' ) {
-        // Parse identifier to get style and name for class
-        $parsed = AyeCode_Font_Awesome_SVG_Loader::instance()->parse_identifier( $identifier );
-
-        if ( ! is_wp_error( $parsed ) ) {
-            // Add identifier-based class (e.g., aui-icon-solid-user or aui-icon-custom-logo)
-            $icon_class = 'aui-icon-' . $parsed['style'] . '-' . $parsed['name'];
-
-            // Merge into existing classes
-            if ( ! empty( $options['class'] ) ) {
-                if ( is_array( $options['class'] ) ) {
-                    $options['class'][] = $icon_class;
-                } else {
-                    $options['class'] .= ' ' . $icon_class;
-                }
-            } else {
-                $options['class'] = $icon_class;
-            }
-        }
-
-        return AyeCode_Font_Awesome_SVG_Loader::instance()->get_inline_icon( $identifier, $options );
-    }
-
-    // Otherwise, render as <i> tag for CSS/JS/KIT
+    // Parse identifier first to check if it's a custom icon
     $parsed = AyeCode_Font_Awesome_SVG_Loader::instance()->parse_identifier( $identifier );
 
     if ( is_wp_error( $parsed ) ) {
         return '';
     }
 
+    // Custom icons ALWAYS render as SVG regardless of Type setting
+    $is_custom = ( $parsed['type'] === 'custom' );
+    $use_svg = ( isset( $settings['type'] ) && $settings['type'] === 'SVG' ) || $is_custom;
+
+    // If type is SVG or custom icon, render inline SVG
+    if ( $use_svg ) {
+        // Add identifier-based class (e.g., aui-icon-solid-user or aui-icon-custom-logo)
+        $icon_class = 'aui-icon-' . $parsed['style'] . '-' . $parsed['name'];
+
+        // Merge into existing classes
+        if ( ! empty( $options['class'] ) ) {
+            if ( is_array( $options['class'] ) ) {
+                $options['class'][] = $icon_class;
+            } else {
+                $options['class'] .= ' ' . $icon_class;
+            }
+        } else {
+            $options['class'] = $icon_class;
+        }
+
+        return AyeCode_Font_Awesome_SVG_Loader::instance()->get_inline_icon( $identifier, $options );
+    }
+
+    // Otherwise, render as <i> tag for CSS/JS/KIT (Font Awesome icons only)
     // Build <i> tag
     $classes = array();
 
-    if ( $parsed['type'] !== 'custom' ) {
+    // Handle Sharp icons (sharp-solid, sharp-regular) - they need to be split into two classes
+    if ( strpos( $parsed['style'], 'sharp-' ) === 0 ) {
+        $classes[] = 'fa-sharp';
+        $classes[] = 'fa-' . str_replace( 'sharp-', '', $parsed['style'] );
+    } else {
         $classes[] = 'fa-' . $parsed['style'];
-        $classes[] = 'fa-' . $parsed['name'];
     }
+
+    $classes[] = 'fa-' . $parsed['name'];
 
     // Add extra classes from identifier
     if ( ! empty( $parsed['extra_classes'] ) ) {

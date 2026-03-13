@@ -169,6 +169,17 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                             'default' => '',
                             'show_if' => '[%pro%]',
                         ],
+
+//                        [
+//                            'id'      => 'auth_token',
+//                            'type'    => 'text',
+//                            'label'   => __( 'Auth Token', 'font-awesome-settings' ),
+////                            'description'    => __( 'Enter your Font Awesome API Key', 'font-awesome-settings' ),
+////                            'placeholder'    => __( 'Required if using v6/7', 'font-awesome-settings' ),
+//                            'default' => '',
+//                            'show_if' => '[%pro%]',
+//                        ],
+
                         [
                             'id'      => 'local',
                             'type'    => 'toggle',

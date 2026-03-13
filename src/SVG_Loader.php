@@ -167,6 +167,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 * Supports formats:
 	 * - 'fa-solid fa-user' → ['style' => 'solid', 'name' => 'user', 'type' => 'free', 'extra_classes' => []]
 	 * - 'fas fa-user' → ['style' => 'solid', 'name' => 'user', 'type' => 'free', 'extra_classes' => []]
+	 * - 'fa-sharp fa-regular fa-sun' → ['style' => 'sharp-regular', 'name' => 'sun', 'type' => 'pro', 'extra_classes' => []]
 	 * - 'fas fa-sign-out-alt animate-target me-2' → includes extra_classes
 	 * - 'aui-icon-logo' → ['style' => 'custom', 'name' => 'logo', 'type' => 'custom', 'extra_classes' => []]
 	 *
@@ -199,29 +200,47 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			return new WP_Error( 'invalid_identifier', 'Invalid icon identifier format. Expected "fa-{style} fa-{name}" or "fas fa-{name}".' );
 		}
 
-		// Extract style and name from first two parts.
+		// Check for Sharp icons (3-part format: fa-sharp fa-{style} fa-{name}).
 		$style_part = $parts[0];
 		$name_part  = $parts[1];
-
-		// Extract any extra classes after the icon name.
 		$extra_classes = array_slice( $parts, 2 );
 
-		// Map old shorthand syntax to full style names.
-		$style_map = array(
-			'fas' => 'solid',
-			'far' => 'regular',
-			'fab' => 'brands',
-			'fal' => 'light',
-			'fat' => 'thin',
-			'fad' => 'duotone',
-		);
+		if ( ( $style_part === 'fa-sharp' || $style_part === 'fass' || $style_part === 'fasr' ) && count( $parts ) >= 3 ) {
+			// Sharp icon format: fa-sharp fa-solid fa-user or fa-sharp fa-regular fa-user
+			$sharp_style_part = $parts[1];
+			$name_part = $parts[2];
+			$extra_classes = array_slice( $parts, 3 );
 
-		// Check if using old syntax (fas, far, fab, etc).
-		if ( isset( $style_map[ $style_part ] ) ) {
-			$style = $style_map[ $style_part ];
+			// Map sharp shorthand
+			if ( $style_part === 'fass' ) {
+				$style = 'sharp-solid';
+			} elseif ( $style_part === 'fasr' ) {
+				$style = 'sharp-regular';
+			} else {
+				// Remove fa- prefix from sharp style
+				$sharp_style = str_replace( 'fa-', '', $sharp_style_part );
+				$style = 'sharp-' . $sharp_style;
+			}
 		} else {
-			// Remove 'fa-' prefix from new syntax.
-			$style = str_replace( 'fa-', '', $style_part );
+			// Map old shorthand syntax to full style names.
+			$style_map = array(
+				'fas'  => 'solid',
+				'far'  => 'regular',
+				'fab'  => 'brands',
+				'fal'  => 'light',
+				'fat'  => 'thin',
+				'fad'  => 'duotone',
+				'fass' => 'sharp-solid',
+				'fasr' => 'sharp-regular',
+			);
+
+			// Check if using old syntax (fas, far, fab, etc).
+			if ( isset( $style_map[ $style_part ] ) ) {
+				$style = $style_map[ $style_part ];
+			} else {
+				// Remove 'fa-' prefix from new syntax.
+				$style = str_replace( 'fa-', '', $style_part );
+			}
 		}
 
 		// Remove 'fa-' prefix from name.
@@ -302,6 +321,11 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 * @return string|WP_Error SVG content or error.
 	 */
 	private function fetch_from_remote( string $style, string $name, string $version, string $type ) {
+		// For Pro v6/v7, use the Font Awesome API instead of CDN.
+		if ( 'pro' === $type && version_compare( $version, '6.0.0', '>=' ) ) {
+			return $this->fetch_from_fa_api( $style, $name, $version );
+		}
+
 		// Build CDN URL.
 		$endpoint = $this->cdn_endpoints[ $type ];
 		$url      = str_replace(
@@ -337,6 +361,240 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		}
 
 		return $svg;
+	}
+
+	/**
+	 * Fetch SVG from Font Awesome API using GraphQL (for Pro v6/v7).
+	 *
+	 * @param string $style   Icon style.
+	 * @param string $name    Icon name.
+	 * @param string $version Font Awesome version.
+	 *
+	 * @return string|WP_Error SVG content or error.
+	 */
+	private function fetch_from_fa_api( string $style, string $name, string $version ) {
+		// Get or refresh auth token.
+		$auth_token = $this->get_auth_token();
+
+		if ( is_wp_error( $auth_token ) ) {
+			return $auth_token;
+		}
+
+		// Map version to API format (6.x or 7.x).
+		$api_version = version_compare( $version, '7.0.0', '>=' ) ? '7.x' : '6.x';
+
+		// Map style to GraphQL family and style.
+		$family_style_map = array(
+			'solid'         => array( 'family' => 'CLASSIC', 'style' => 'SOLID' ),
+			'regular'       => array( 'family' => 'CLASSIC', 'style' => 'REGULAR' ),
+			'light'         => array( 'family' => 'CLASSIC', 'style' => 'LIGHT' ),
+			'thin'          => array( 'family' => 'CLASSIC', 'style' => 'THIN' ),
+			'duotone'       => array( 'family' => 'CLASSIC', 'style' => 'DUOTONE' ),
+			'brands'        => array( 'family' => 'BRANDS', 'style' => 'REGULAR' ),
+			'sharp-solid'   => array( 'family' => 'SHARP', 'style' => 'SOLID' ),
+			'sharp-regular' => array( 'family' => 'SHARP', 'style' => 'REGULAR' ),
+		);
+
+		if ( ! isset( $family_style_map[ $style ] ) ) {
+			return new WP_Error( 'invalid_style', sprintf( 'Style "%s" is not supported by Font Awesome API.', $style ) );
+		}
+
+		$family = $family_style_map[ $style ]['family'];
+		$fa_style = $family_style_map[ $style ]['style'];
+
+		// Build GraphQL query.
+		$query = sprintf(
+			'query { release(version: "%s") { icon(name: "%s") { svgs(filter: { familyStyles: [{ family: %s, style: %s }] }) { html } } } }',
+			$api_version,
+			$name,
+			$family,
+			$fa_style
+		);
+
+		// Make API request.
+		$response = wp_remote_post(
+			'https://api.fontawesome.com/',
+			array(
+				'timeout' => 10,
+				'headers' => array(
+					'Content-Type'  => 'application/json',
+					'Authorization' => 'Bearer ' . $auth_token,
+				),
+				'body'    => wp_json_encode( array( 'query' => $query ) ),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		// If unauthorized, try refreshing the token once.
+		if ( 401 === $status_code || 403 === $status_code ) {
+			// Force refresh the token.
+			$auth_token = $this->get_auth_token( true );
+
+			if ( is_wp_error( $auth_token ) ) {
+				return $auth_token;
+			}
+
+			// Retry the request with new token.
+			$response = wp_remote_post(
+				'https://api.fontawesome.com/',
+				array(
+					'timeout' => 10,
+					'headers' => array(
+						'Content-Type'  => 'application/json',
+						'Authorization' => 'Bearer ' . $auth_token,
+					),
+					'body'    => wp_json_encode( array( 'query' => $query ) ),
+				)
+			);
+
+			if ( is_wp_error( $response ) ) {
+				return $response;
+			}
+
+			$status_code = wp_remote_retrieve_response_code( $response );
+		}
+
+		if ( 200 !== $status_code ) {
+			return new WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed. Status: %d', $status_code ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		// Check for GraphQL errors (especially unauthorized)
+		if ( ! empty( $data['errors'] ) ) {
+			foreach ( $data['errors'] as $error ) {
+				if ( isset( $error['message'] ) && $error['message'] === 'unauthorized' ) {
+					// Force refresh the token.
+					$auth_token = $this->get_auth_token( true );
+
+					if ( is_wp_error( $auth_token ) ) {
+						return $auth_token;
+					}
+
+					// Retry the request with new token.
+					$response = wp_remote_post(
+						'https://api.fontawesome.com/',
+						array(
+							'timeout' => 10,
+							'headers' => array(
+								'Content-Type'  => 'application/json',
+								'Authorization' => 'Bearer ' . $auth_token,
+							),
+							'body'    => wp_json_encode( array( 'query' => $query ) ),
+						)
+					);
+
+					if ( is_wp_error( $response ) ) {
+						return $response;
+					}
+
+					$status_code = wp_remote_retrieve_response_code( $response );
+
+					if ( 200 !== $status_code ) {
+						return new WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed after retry. Status: %d', $status_code ) );
+					}
+
+					$body = wp_remote_retrieve_body( $response );
+					$data = json_decode( $body, true );
+
+					// Check again for errors after retry
+					if ( ! empty( $data['errors'] ) ) {
+						return new WP_Error( 'api_error', 'Font Awesome API returned errors: ' . wp_json_encode( $data['errors'] ) );
+					}
+
+					break; // Exit the error loop after retry
+				}
+			}
+		}
+
+		if ( empty( $data['data']['release']['icon']['svgs'][0]['html'] ) ) {
+			return new WP_Error( 'icon_not_found', sprintf( 'Icon "%s" not found in Font Awesome API response.', $name ) );
+		}
+
+		// Extract and unescape SVG.
+		$svg = $data['data']['release']['icon']['svgs'][0]['html'];
+		$svg = stripslashes( $svg );
+
+		return $svg;
+	}
+
+	/**
+	 * Get or refresh Font Awesome auth token.
+	 *
+	 * Exchanges api_key for auth_token via Font Awesome API.
+	 * Caches auth_token in settings for reuse.
+	 *
+	 * @param bool $force_refresh Force refresh even if token exists.
+	 *
+	 * @return string|WP_Error Auth token or error.
+	 */
+	private function get_auth_token( bool $force_refresh = false ) {
+		$settings = $this->settings_instance->settings;
+
+		// Check if we have an existing auth_token (unless forcing refresh).
+		if ( ! $force_refresh && ! empty( $settings['auth_token'] ) ) {
+			return $settings['auth_token'];
+		}
+
+		// Check if we have an api_key.
+		if ( empty( $settings['api_key'] ) ) {
+			return new WP_Error( 'missing_api_key', 'Font Awesome API Key is required for Pro v6/v7 icons.' );
+		}
+
+		// Exchange api_key for auth_token.
+		$response = wp_remote_post(
+			'https://api.fontawesome.com/token',
+			array(
+				'timeout' => 10,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $settings['api_key'],
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		if ( 200 !== $status_code ) {
+			return new WP_Error( 'token_exchange_failed', sprintf( 'Failed to exchange API key for auth token. Status: %d', $status_code ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['access_token'] ) ) {
+			return new WP_Error( 'invalid_token_response', 'Invalid response from Font Awesome token endpoint.' );
+		}
+
+		$auth_token = $data['access_token'];
+
+		// Save the auth_token to settings.
+		$this->save_auth_token( $auth_token );
+
+		return $auth_token;
+	}
+
+	/**
+	 * Save auth token to settings.
+	 *
+	 * @param string $auth_token The auth token to save.
+	 */
+	private function save_auth_token( string $auth_token ): void {
+		$settings = get_option( 'wp-font-awesome-settings', array() );
+		$settings['auth_token'] = $auth_token;
+		update_option( 'wp-font-awesome-settings', $settings );
+
+		// Update the cached settings in the main instance.
+		$this->settings_instance->settings['auth_token'] = $auth_token;
 	}
 
 	/**
