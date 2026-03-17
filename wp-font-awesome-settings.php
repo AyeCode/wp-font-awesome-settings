@@ -539,6 +539,27 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		public function admin_notices() {
 			$settings = $this->settings;
 
+			// Check for icon generation success/error messages.
+			$icon_gen_error = get_transient( 'fa_icon_gen_error' );
+			if ( $icon_gen_error ) {
+				?>
+				<div class="notice notice-error is-dismissible">
+					<p><?php echo esc_html( sprintf( __( 'Font Awesome Icon Library Generation Error: %s', 'font-awesome-settings' ), $icon_gen_error ) ); ?></p>
+				</div>
+				<?php
+				delete_transient( 'fa_icon_gen_error' );
+			}
+
+			$icon_gen_success = get_transient( 'fa_icon_gen_success' );
+			if ( $icon_gen_success ) {
+				?>
+				<div class="notice notice-success is-dismissible">
+					<p><?php echo esc_html( $icon_gen_success ); ?></p>
+				</div>
+				<?php
+				delete_transient( 'fa_icon_gen_success' );
+			}
+
 			if ( defined( 'FONTAWESOME_PLUGIN_FILE' ) ) {
 				if ( ! empty( $_REQUEST['page'] ) && $_REQUEST['page'] == 'wp-font-awesome-settings' ) {
 					?>
@@ -1068,11 +1089,45 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 * @return array Modified libraries array.
 		 */
 		public function register_custom_icons_library( $libraries ) {
-			// Only add if custom icons exist.
+			$upload_dir = wp_upload_dir( null, false );
+
+			// Replace Font Awesome libraries with local versions if available.
+			$local_icon_version = isset( $this->settings['local_icon_version'] ) ? $this->settings['local_icon_version'] : '';
+			$local_icon_styles  = isset( $this->settings['local_icon_styles'] ) ? $this->settings['local_icon_styles'] : array();
+
+			if ( ! empty( $local_icon_version ) && ! empty( $local_icon_styles ) ) {
+				// Track which styles exist in the incoming libraries.
+				$existing_styles = array();
+
+				// Loop through libraries and replace matching Font Awesome files.
+				foreach ( $libraries as $key => $library_url ) {
+					// Check if this is a Font Awesome library URL.
+					if ( preg_match( '/font-awesome-(solid|regular|brands|light|thin|duotone)\.min\.json$/', $library_url, $matches ) ) {
+						$style = $matches[1];
+						$existing_styles[] = $style;
+
+						// If we have this style generated locally, replace with local URL.
+						if ( in_array( $style, $local_icon_styles, true ) ) {
+							$libraries[ $key ] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-' . $style . '.min.json';
+						}
+					}
+				}
+
+				// Add any local styles that don't exist in the incoming libraries (e.g., PRO styles).
+				foreach ( $local_icon_styles as $style ) {
+					if ( ! in_array( $style, $existing_styles, true ) ) {
+						$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-' . $style . '.min.json';
+					}
+				}
+			}
+
+			// Add custom icons if they exist.
 			if ( ayecode_get_custom_icon_count() > 0 ) {
-				$upload_dir = wp_upload_dir( null, false );
 				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/custom-icons.json';
 			}
+
+//            print_r($local_icon_styles);
+//            print_r($libraries);exit;
 
 			return $libraries;
 		}
@@ -1096,6 +1151,13 @@ if ( ! class_exists( 'AyeCode_Font_Awesome_SVG_Loader' ) ) {
  */
 if ( ! class_exists( 'WP_Font_Awesome_Custom_Icons' ) ) {
 	require_once dirname( __FILE__ ) . '/src/Custom_Icons.php';
+}
+
+/**
+ * Load Icon Library Generator class.
+ */
+if ( ! class_exists( 'WP_Font_Awesome_Icon_Library_Generator' ) ) {
+	require_once dirname( __FILE__ ) . '/src/Icon_Library_Generator.php';
 }
 
 /**

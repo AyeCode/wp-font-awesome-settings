@@ -54,6 +54,99 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
     }
 
 	/**
+	 * Saves settings to the database, capturing old values for comparison.
+	 *
+	 * Overrides parent method to check for version/pro/api_key changes before saving.
+	 *
+	 * @param array $new_settings The raw settings data from the AJAX request.
+	 * @return bool True on success, false on failure.
+	 */
+	public function save_settings( $new_settings ) {
+		// Capture current settings BEFORE saving.
+		$old_settings = $this->get_settings();
+
+		// Call parent to handle sanitization and saving.
+		$result = parent::save_settings( $new_settings );
+
+		// If save was successful, check if we need to regenerate icon libraries.
+		if ( $result ) {
+			$new_settings_saved = $this->get_settings();
+			$this->maybe_regenerate_icon_libraries( $old_settings, $new_settings_saved );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Check if icon libraries need regeneration and trigger if needed.
+	 *
+	 * @param array $old_settings Settings before save.
+	 * @param array $new_settings Settings after save.
+	 */
+	private function maybe_regenerate_icon_libraries( $old_settings, $new_settings ) {
+
+		// Extract relevant settings.
+		$old_version = isset( $old_settings['version'] ) ? $old_settings['version'] : '';
+		$new_version = isset( $new_settings['version'] ) ? $new_settings['version'] : '';
+		$old_pro     = isset( $old_settings['pro'] ) ? $old_settings['pro'] : false;
+		$new_pro     = isset( $new_settings['pro'] ) ? $new_settings['pro'] : false;
+		$old_api_key = isset( $old_settings['api_key'] ) ? $old_settings['api_key'] : '';
+		$new_api_key = isset( $new_settings['api_key'] ) ? $new_settings['api_key'] : '';
+
+		// Check if any relevant setting changed.
+		$version_changed = $old_version !== $new_version;
+		$pro_changed     = $old_pro !== $new_pro;
+		$api_key_changed = $old_api_key !== $new_api_key;
+
+		if ( ! $version_changed && ! $pro_changed && ! $api_key_changed ) {
+			return; // No relevant changes.
+		}
+
+		// Generate icon libraries.
+		$generator = WP_Font_Awesome_Icon_Library_Generator::instance();
+		$result    = $generator->generate_icon_libraries( $new_settings );
+
+		// Handle result.
+		if ( is_wp_error( $result ) ) {
+			// Store error to display as admin notice.
+			set_transient( 'fa_icon_gen_error', $result->get_error_message(), 60 );
+		} else {
+			// $result is an array of generated styles, e.g., ['solid', 'brands', 'regular']
+			// Clean up old style files that are no longer needed.
+			$old_icon_styles = isset( $old_settings['local_icon_styles'] ) ? $old_settings['local_icon_styles'] : array();
+			if ( ! empty( $old_icon_styles ) ) {
+				$cleanup_result = $generator->cleanup_old_styles( $old_icon_styles, $result );
+				if ( is_wp_error( $cleanup_result ) ) {
+					// Log cleanup error but don't fail the entire operation.
+					error_log( 'Font Awesome cleanup error: ' . $cleanup_result->get_error_message() );
+				}
+			}
+
+			// Update local_icon_version and local_icon_styles settings.
+			$current_settings                       = get_option( $this->option_name, array() );
+			$current_settings['local_icon_version'] = $new_version;
+			$current_settings['local_icon_styles']  = $result; // Array of generated styles.
+			update_option( $this->option_name, $current_settings );
+
+			// Store success message.
+			$styles_count = count( $result );
+			set_transient(
+				'fa_icon_gen_success',
+				sprintf(
+					_n(
+						'Icon library updated successfully (%d style).',
+						'Icon libraries updated successfully (%d styles).',
+						$styles_count,
+						'font-awesome-settings'
+					),
+					$styles_count
+				),
+				60
+			);
+		}
+	}
+
+	/**
 	 * Get the settings configuration
 	 *
 	 * @return array Configuration array with sections and fields
@@ -170,15 +263,15 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                             'show_if' => '[%pro%]',
                         ],
 
-//                        [
-//                            'id'      => 'auth_token',
-//                            'type'    => 'text',
-//                            'label'   => __( 'Auth Token', 'font-awesome-settings' ),
-////                            'description'    => __( 'Enter your Font Awesome API Key', 'font-awesome-settings' ),
-////                            'placeholder'    => __( 'Required if using v6/7', 'font-awesome-settings' ),
-//                            'default' => '',
-//                            'show_if' => '[%pro%]',
-//                        ],
+                        [
+                            'id'      => 'auth_token',
+                            'type'    => 'text',
+                            'label'   => __( 'Auth Token', 'font-awesome-settings' ),
+//                            'description'    => __( 'Enter your Font Awesome API Key', 'font-awesome-settings' ),
+//                            'placeholder'    => __( 'Required if using v6/7', 'font-awesome-settings' ),
+                            'default' => '',
+                            'show_if' => '[%pro%]',
+                        ],
 
                         [
                             'id'      => 'local',
@@ -190,9 +283,30 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                         ],
                         [
                             'id'      => 'local_version',
+//                            'type'    => 'hidden',
+                            'type'    => 'text',
+                            'default' => '',
+                        ],
+                        [
+                            'id'      => 'local_icon_version',
+//                            'type'    => 'hidden',
+                            'type'    => 'text',
+                            'default' => '',
+                        ],
+                        [
+                            'id'      => 'local_icon_styles',
                             'type'    => 'hidden',
                             'default' => '',
                         ],
+//                        [
+//                            'id'      => 'ver_info',
+//                            'type'    => 'alert',
+//                            'alert_type' => 'danger',
+//                            'description' => time(),
+////                            'description' => __( '<strong>Warning</strong> Font Awesome Pro v6/7 requires the use of a <strong>KIT</strong> or <strong>SVG</strong>, please correct your loading method setting', 'font-awesome-settings' ),
+////                            'show_if' => '[%pro%] && ([%type%]!="KIT" && [%type%]!="SVG") && ( [%version%]>"5.999.0" || [%version%]=="" )',
+//                        ],
+
 
 
 					],
@@ -510,3 +624,4 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 
 
 }
+
