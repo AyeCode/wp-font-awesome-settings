@@ -114,6 +114,14 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 			// $result is an array of generated styles, e.g., ['solid', 'brands', 'regular']
 			// Clean up old style files that are no longer needed.
 			$old_icon_styles = isset( $old_settings['local_icon_styles'] ) ? $old_settings['local_icon_styles'] : array();
+			// Decode JSON string if needed.
+			if ( is_string( $old_icon_styles ) && ! empty( $old_icon_styles ) ) {
+				$old_icon_styles = json_decode( $old_icon_styles, true );
+				if ( ! is_array( $old_icon_styles ) ) {
+					$old_icon_styles = array();
+				}
+			}
+
 			if ( ! empty( $old_icon_styles ) ) {
 				$cleanup_result = $generator->cleanup_old_styles( $old_icon_styles, $result );
 				if ( is_wp_error( $cleanup_result ) ) {
@@ -125,7 +133,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 			// Update local_icon_version and local_icon_styles settings.
 			$current_settings                       = get_option( $this->option_name, array() );
 			$current_settings['local_icon_version'] = $new_version;
-			$current_settings['local_icon_styles']  = $result; // Array of generated styles.
+			$current_settings['local_icon_styles']  = is_array( $result ) ? wp_json_encode( $result ) : $result;
 			update_option( $this->option_name, $current_settings );
 
 			// Store success message.
@@ -191,9 +199,12 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 								'<a rel="noopener noreferrer" target="_blank" href="https://fontawesome.com/kits"><i class="fas fa-external-link-alt"></i> ',
 								'</a>'
 							),
+                            'extra_attributes' => [
+                                'required' => true
+                            ],
 							'placeholder' => 'https://kit.fontawesome.com/123abc.js',
 							'default'     => '',
-							'show_if' => '[%type%]=="KIT"',
+							'show_if' => '[%type%]=="KIT" || [%type%]=="SVG"',
 						],
 						[
 							'id'      => 'version',

@@ -205,17 +205,19 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				}
 
 				// Backend always loads (CSS or JS based on type).
-				if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
-					// Use CSS for backend when frontend is SVG or CSS.
-					if ( $this->settings['type'] == 'CSS' || $this->settings['type'] == 'SVG' ) {
-						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
-						add_action( 'enqueue_block_assets', array( $this, 'enqueue_style_admin_only' ), 5000 );
-					} else {
-						// JS or KIT.
-						add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
-						add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts_admin_only' ), 5000 );
-					}
+			// Backend always loads (CSS or JS based on type).
+			if ( $this->settings['enqueue'] == '' || $this->settings['enqueue'] == 'backend' ) {
+				// Use CSS for backend when frontend is SVG (FREE) or CSS.
+				// For SVG + PRO, use KIT if available.
+				if ( ( $this->settings['type'] == 'CSS' ) || ( $this->settings['type'] == 'SVG' && empty( $this->settings['pro'] ) ) ) {
+					add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_style' ), 5000 );
+					add_action( 'enqueue_block_assets', array( $this, 'enqueue_style_admin_only' ), 5000 );
+				} else {
+					// JS, KIT, or SVG + PRO (uses KIT).
+					add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 5000 );
+					add_action( 'enqueue_block_assets', array( $this, 'enqueue_scripts_admin_only' ), 5000 );
 				}
+			}
 
 				// Script loader tag filter (for JS/KIT only).
 				if ( $this->settings['type'] == 'JS' || $this->settings['type'] == 'KIT' ) {
@@ -343,7 +345,8 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			$kit_url = $this->settings['kit-url'] ? sanitize_text_field( $this->settings['kit-url'] ) : '';
 			$url     = '';
 
-			if ( $type == 'KIT' && $kit_url ) {
+			// Use KIT if type is KIT, or if SVG + PRO (needs kit for backend icons).
+			if ( ( $type == 'KIT' || ( $type == 'SVG' && ! empty( $this->settings['pro'] ) ) ) && $kit_url ) {
 				if ( $shims ) {
 					// if its a kit then we don't add shims here
 					return '';
@@ -1088,21 +1091,47 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 * @param array $libraries Array of icon library URLs.
 		 * @return array Modified libraries array.
 		 */
-		public function register_custom_icons_library( $libraries ) {
-			$upload_dir = wp_upload_dir( null, false );
+	public function register_custom_icons_library( $libraries ) {
+		$upload_dir = wp_upload_dir( null, false );
 
-			// Replace Font Awesome libraries with local versions if available.
-			$local_icon_version = isset( $this->settings['local_icon_version'] ) ? $this->settings['local_icon_version'] : '';
-			$local_icon_styles  = isset( $this->settings['local_icon_styles'] ) ? $this->settings['local_icon_styles'] : array();
+		// Replace Font Awesome libraries with local versions if available.
+		$local_icon_version = isset( $this->settings['local_icon_version'] ) ? $this->settings['local_icon_version'] : '';
+		$local_icon_styles  = isset( $this->settings['local_icon_styles'] ) ? $this->settings['local_icon_styles'] : array();
 
-			if ( ! empty( $local_icon_version ) && ! empty( $local_icon_styles ) ) {
-				// Track which styles exist in the incoming libraries.
+		// Decode JSON if it's a string.
+		if ( is_string( $local_icon_styles ) && ! empty( $local_icon_styles ) ) {
+			$local_icon_styles = json_decode( $local_icon_styles, true );
+			if ( ! is_array( $local_icon_styles ) ) {
+				$local_icon_styles = array();
+			}
+		}
+
+//        print_r($local_icon_styles);exit;
+//        print_r($this->settings);exit;
+		if ( ! empty( $local_icon_version ) && ! empty( $local_icon_styles ) ) {
+			// If PRO is active, replace ALL Font Awesome files with our local ones.
+			if ( ! empty( absint( $this->settings['pro'] ) ) ) {
+				// Remove all Font Awesome libraries.
+				foreach ( $libraries as $key => $library_url ) {
+					if ( preg_match( '/font-awesome-[a-z\-]+\.min\.json$/', $library_url ) ) {
+						unset( $libraries[ $key ] );
+					}
+				}
+				// Reindex array to prevent it from being converted to an object.
+				$libraries = array_values( $libraries );
+
+
+				// Add our local PRO files (brands and pro).
+				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-brands.min.json';
+				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-pro.min.json';
+			} else {
+				// FREE: Track which styles exist in the incoming libraries.
 				$existing_styles = array();
 
 				// Loop through libraries and replace matching Font Awesome files.
 				foreach ( $libraries as $key => $library_url ) {
 					// Check if this is a Font Awesome library URL.
-					if ( preg_match( '/font-awesome-(solid|regular|brands|light|thin|duotone)\.min\.json$/', $library_url, $matches ) ) {
+					if ( preg_match( '/font-awesome-(solid|regular|brands)\.min\.json$/', $library_url, $matches ) ) {
 						$style = $matches[1];
 						$existing_styles[] = $style;
 
@@ -1113,24 +1142,25 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 					}
 				}
 
-				// Add any local styles that don't exist in the incoming libraries (e.g., PRO styles).
+				// Add any local styles that don't exist in the incoming libraries.
 				foreach ( $local_icon_styles as $style ) {
 					if ( ! in_array( $style, $existing_styles, true ) ) {
 						$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-' . $style . '.min.json';
 					}
 				}
 			}
+		}
 
-			// Add custom icons if they exist.
-			if ( ayecode_get_custom_icon_count() > 0 ) {
-				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/custom-icons.json';
-			}
+		// Add custom icons if they exist.
+		if ( ayecode_get_custom_icon_count() > 0 ) {
+			$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/custom-icons.json';
+		}
 
 //            print_r($local_icon_styles);
 //            print_r($libraries);exit;
 
-			return $libraries;
-		}
+		return $libraries;
+	}
 	}
 
 	/**

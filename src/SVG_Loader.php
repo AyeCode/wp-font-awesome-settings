@@ -96,13 +96,16 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	public function get_inline_icon( string $identifier, array $options = array() ): string {
 		// Parse the identifier to determine routing.
 		$parsed = $this->parse_identifier( $identifier );
+//        print_r($parsed);echo '###'.$identifier;
 		if ( is_wp_error( $parsed ) ) {
 			return '';
 		}
 
-		$style = $parsed['style'];
-		$name  = $parsed['name'];
-		$type  = $parsed['type']; // 'free', 'pro', or 'custom'
+		$style  = $parsed['style'];
+		$name   = $parsed['name'];
+		$type   = $parsed['type']; // 'free', 'pro', or 'custom'
+		$family = isset( $parsed['family'] ) ? $parsed['family'] : null;
+		$weight = isset( $parsed['weight'] ) ? $parsed['weight'] : null;
 
 		// Merge extra classes from identifier into options.
 		if ( ! empty( $parsed['extra_classes'] ) ) {
@@ -140,7 +143,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 
 			// Fetch from remote.
 			$version = $this->settings_instance->settings['version'] ?: $this->settings_instance->get_latest_version();
-			$svg     = $this->fetch_from_remote( $style, $name, $version, $type );
+			$svg     = $this->fetch_from_remote( $style, $name, $version, $type, $family, $weight );
 
 			// Release the lock.
 			$this->release_fetch_lock( $cache_key );
@@ -168,6 +171,8 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 * - 'fa-solid fa-user' → ['style' => 'solid', 'name' => 'user', 'type' => 'free', 'extra_classes' => []]
 	 * - 'fas fa-user' → ['style' => 'solid', 'name' => 'user', 'type' => 'free', 'extra_classes' => []]
 	 * - 'fa-sharp fa-regular fa-sun' → ['style' => 'sharp-regular', 'name' => 'sun', 'type' => 'pro', 'extra_classes' => []]
+	 * - 'fa-duotone fa-solid fa-acorn' → ['style' => 'duotone', 'name' => 'acorn', 'type' => 'pro', 'extra_classes' => []]
+	 * - 'fa-sharp-duotone fa-thin fa-acorn' → ['style' => 'sharp-duotone', 'name' => 'acorn', 'type' => 'pro', 'extra_classes' => []]
 	 * - 'fas fa-sign-out-alt animate-target me-2' → includes extra_classes
 	 * - 'aui-icon-logo' → ['style' => 'custom', 'name' => 'logo', 'type' => 'custom', 'extra_classes' => []]
 	 *
@@ -200,51 +205,130 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			return new WP_Error( 'invalid_identifier', 'Invalid icon identifier format. Expected "fa-{style} fa-{name}" or "fas fa-{name}".' );
 		}
 
-		// Check for Sharp icons (3-part format: fa-sharp fa-{style} fa-{name}).
-		$style_part = $parts[0];
-		$name_part  = $parts[1];
-		$extra_classes = array_slice( $parts, 2 );
+		// Initialize family and weight.
+		$family = null;
+		$weight = null;
 
-		if ( ( $style_part === 'fa-sharp' || $style_part === 'fass' || $style_part === 'fasr' ) && count( $parts ) >= 3 ) {
-			// Sharp icon format: fa-sharp fa-solid fa-user or fa-sharp fa-regular fa-user
-			$sharp_style_part = $parts[1];
-			$name_part = $parts[2];
-			$extra_classes = array_slice( $parts, 3 );
+		// Check for shorthand syntax first (fas, far, fab, etc).
+		$style_map = array(
+			'fas'  => 'solid',
+			'far'  => 'regular',
+			'fab'  => 'brands',
+			'fal'  => 'light',
+			'fat'  => 'thin',
+			'fad'  => 'duotone',
+			'fass' => 'sharp-solid',
+			'fasr' => 'sharp-regular',
+		);
 
-			// Map sharp shorthand
-			if ( $style_part === 'fass' ) {
-				$style = 'sharp-solid';
-			} elseif ( $style_part === 'fasr' ) {
-				$style = 'sharp-regular';
+		if ( isset( $style_map[ $parts[0] ] ) ) {
+			// Shorthand format: fas fa-user
+			$style = $style_map[ $parts[0] ];
+			$name  = str_replace( 'fa-', '', $parts[1] );
+			$extra_classes = array_slice( $parts, 2 );
+
+			// Map shorthand to family/weight for API calls.
+			if ( 'sharp-solid' === $style ) {
+				$family = 'sharp';
+				$weight = 'solid';
+			} elseif ( 'sharp-regular' === $style ) {
+				$family = 'sharp';
+				$weight = 'regular';
+			} elseif ( 'brands' === $style ) {
+				$family = null;
+				$weight = null;
 			} else {
-				// Remove fa- prefix from sharp style
-				$sharp_style = str_replace( 'fa-', '', $sharp_style_part );
-				$style = 'sharp-' . $sharp_style;
+				// Classic family with weight.
+				$family = null;
+				$weight = $style;
 			}
 		} else {
-			// Map old shorthand syntax to full style names.
-			$style_map = array(
-				'fas'  => 'solid',
-				'far'  => 'regular',
-				'fab'  => 'brands',
-				'fal'  => 'light',
-				'fat'  => 'thin',
-				'fad'  => 'duotone',
-				'fass' => 'sharp-solid',
-				'fasr' => 'sharp-regular',
-			);
+			// Full format: Parse using family/weight extraction.
+			// Define known family and weight classes.
+			// Note: fa-duotone can be BOTH a family class OR a weight class depending on context.
+			$family_only_classes = array( 'fa-sharp', 'fa-sharp-duotone' );
+			$weight_only_classes = array( 'fa-solid', 'fa-regular', 'fa-light', 'fa-thin' );
+			$duotone_class = 'fa-duotone';
 
-			// Check if using old syntax (fas, far, fab, etc).
-			if ( isset( $style_map[ $style_part ] ) ) {
-				$style = $style_map[ $style_part ];
-			} else {
-				// Remove 'fa-' prefix from new syntax.
-				$style = str_replace( 'fa-', '', $style_part );
+			$icon_name = null;
+			$extra_classes = array();
+			$has_duotone = false;
+
+			// First pass: identify all components.
+			foreach ( $parts as $part ) {
+				if ( in_array( $part, $family_only_classes, true ) ) {
+					// Found a family-only class.
+					if ( null === $family ) {
+						$family = str_replace( 'fa-', '', $part );
+					}
+				} elseif ( $duotone_class === $part ) {
+					// Found fa-duotone - mark it for later processing.
+					$has_duotone = true;
+				} elseif ( in_array( $part, $weight_only_classes, true ) ) {
+					// Found a weight class.
+					if ( null === $weight ) {
+						$weight = str_replace( 'fa-', '', $part );
+					}
+				} elseif ( strpos( $part, 'fa-' ) === 0 ) {
+					// This is the icon name (first fa-* class that isn't family/weight).
+					if ( null === $icon_name ) {
+						$icon_name = str_replace( 'fa-', '', $part );
+					} else {
+						// Additional fa- classes are treated as extra classes.
+						$extra_classes[] = $part;
+					}
+				} else {
+					// Non-fa class, add to extra classes.
+					$extra_classes[] = $part;
+				}
 			}
-		}
 
-		// Remove 'fa-' prefix from name.
-		$name = str_replace( 'fa-', '', $name_part );
+			// Process fa-duotone based on context:
+			// - If there's a weight class (fa-solid, fa-regular, etc), fa-duotone is the FAMILY
+			// - If there's NO weight class, fa-duotone is the WEIGHT (for classic family)
+			if ( $has_duotone ) {
+				if ( null !== $weight ) {
+					// fa-duotone is the family (e.g., "fa-duotone fa-solid fa-acorn")
+					if ( null === $family ) {
+						$family = 'duotone';
+					}
+				} else {
+					// fa-duotone is the weight for classic family (e.g., "fa-duotone fa-acorn")
+					$weight = 'duotone';
+				}
+			}
+
+			// Validate we found an icon name.
+			if ( null === $icon_name ) {
+				return new WP_Error( 'invalid_identifier', 'Could not identify icon name in identifier.' );
+			}
+
+			// Map family + weight to filesystem style.
+			// Sharp family: sharp-solid, sharp-regular, sharp-light, sharp-thin
+			// Duotone family: duotone (single style, weight ignored for filesystem)
+			// Sharp-duotone family: sharp-duotone (single style, weight ignored for filesystem)
+			// Classic family (no family class): solid, regular, light, thin, duotone
+
+			if ( 'brands' === $icon_name || ( null === $family && null === $weight ) ) {
+				// Brands or invalid - default to solid for classic.
+				$style = $weight ?: 'solid';
+			} elseif ( 'sharp' === $family ) {
+				// Sharp family: combine with weight (sharp-solid, sharp-regular, etc).
+				$weight = $weight ?: 'solid';
+				$style = 'sharp-' . $weight;
+			} elseif ( 'duotone' === $family ) {
+				// Duotone family: single style (weight is ignored for filesystem lookup).
+				$style = 'duotone';
+			} elseif ( 'sharp-duotone' === $family ) {
+				// Sharp-duotone family: single style (weight is ignored for filesystem lookup).
+				$style = 'sharp-duotone';
+			} else {
+				// Classic family (no family class): use weight directly.
+				$style = $weight ?: 'solid';
+			}
+
+			$name = $icon_name;
+		}
 
 		// Determine if Pro or Free based on style.
 		$is_pro = $this->settings_instance->settings['pro'] && in_array( $style, $this->available_styles['pro'], true );
@@ -260,6 +344,8 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			'style'         => $style,
 			'name'          => sanitize_file_name( $name ),
 			'type'          => $type,
+			'family'        => $family,
+			'weight'        => $weight,
 			'extra_classes' => $extra_classes,
 		);
 	}
@@ -313,17 +399,19 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	/**
 	 * Fetch SVG from remote CDN (Layer 3).
 	 *
-	 * @param string $style   Icon style.
-	 * @param string $name    Icon name.
-	 * @param string $version Font Awesome version.
-	 * @param string $type    'free' or 'pro'.
+	 * @param string      $style   Icon style.
+	 * @param string      $name    Icon name.
+	 * @param string      $version Font Awesome version.
+	 * @param string      $type    'free' or 'pro'.
+	 * @param string|null $family  Icon family (for PRO icons).
+	 * @param string|null $weight  Icon weight (for PRO icons).
 	 *
 	 * @return string|WP_Error SVG content or error.
 	 */
-	private function fetch_from_remote( string $style, string $name, string $version, string $type ) {
+	private function fetch_from_remote( string $style, string $name, string $version, string $type, $family = null, $weight = null ) {
 		// For Pro v6/v7, use the Font Awesome API instead of CDN.
 		if ( 'pro' === $type && version_compare( $version, '6.0.0', '>=' ) ) {
-			return $this->fetch_from_fa_api( $style, $name, $version );
+			return $this->fetch_from_fa_api( $style, $name, $version, $family, $weight );
 		}
 
 		// Build CDN URL.
@@ -334,7 +422,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			$endpoint
 		);
 
-//        echo '###'.$url;
+//        echo '###'.$url;exit
 		// Fetch via wp_remote_get.
 		$response = wp_remote_get(
 			$url,
@@ -366,13 +454,15 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	/**
 	 * Fetch SVG from Font Awesome API using GraphQL (for Pro v6/v7).
 	 *
-	 * @param string $style   Icon style.
-	 * @param string $name    Icon name.
-	 * @param string $version Font Awesome version.
+	 * @param string      $style   Icon style (for filesystem/cache).
+	 * @param string      $name    Icon name.
+	 * @param string      $version Font Awesome version.
+	 * @param string|null $family  Icon family (sharp, duotone, sharp-duotone, or null for classic).
+	 * @param string|null $weight  Icon weight (solid, regular, light, thin).
 	 *
 	 * @return string|WP_Error SVG content or error.
 	 */
-	private function fetch_from_fa_api( string $style, string $name, string $version ) {
+	private function fetch_from_fa_api( string $style, string $name, string $version, $family = null, $weight = null ) {
 		// Get or refresh auth token.
 		$auth_token = $this->get_auth_token();
 
@@ -383,32 +473,40 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Map version to API format (6.x or 7.x).
 		$api_version = version_compare( $version, '7.0.0', '>=' ) ? '7.x' : '6.x';
 
-		// Map style to GraphQL family and style.
-		$family_style_map = array(
-			'solid'         => array( 'family' => 'CLASSIC', 'style' => 'SOLID' ),
-			'regular'       => array( 'family' => 'CLASSIC', 'style' => 'REGULAR' ),
-			'light'         => array( 'family' => 'CLASSIC', 'style' => 'LIGHT' ),
-			'thin'          => array( 'family' => 'CLASSIC', 'style' => 'THIN' ),
-			'duotone'       => array( 'family' => 'CLASSIC', 'style' => 'DUOTONE' ),
-			'brands'        => array( 'family' => 'BRANDS', 'style' => 'REGULAR' ),
-			'sharp-solid'   => array( 'family' => 'SHARP', 'style' => 'SOLID' ),
-			'sharp-regular' => array( 'family' => 'SHARP', 'style' => 'REGULAR' ),
+		// Map family to GraphQL FAMILY enum.
+		$family_map = array(
+			'sharp'         => 'SHARP',
+			'duotone'       => 'DUOTONE',
+			'sharp-duotone' => 'SHARP_DUOTONE',
+			null            => 'CLASSIC', // Default to classic if no family.
 		);
 
-		if ( ! isset( $family_style_map[ $style ] ) ) {
-			return new WP_Error( 'invalid_style', sprintf( 'Style "%s" is not supported by Font Awesome API.', $style ) );
-		}
+		// Map weight to GraphQL STYLE enum.
+		$weight_map = array(
+			'solid'   => 'SOLID',
+			'regular' => 'REGULAR',
+			'light'   => 'LIGHT',
+			'thin'    => 'THIN',
+			'duotone' => 'DUOTONE',
+			null      => 'SOLID', // Default to solid if no weight.
+		);
 
-		$family = $family_style_map[ $style ]['family'];
-		$fa_style = $family_style_map[ $style ]['style'];
+		// Special handling for brands.
+		if ( 'brands' === $style ) {
+			$graphql_family = 'BRANDS';
+			$graphql_style  = 'REGULAR';
+		} else {
+			$graphql_family = isset( $family_map[ $family ] ) ? $family_map[ $family ] : 'CLASSIC';
+			$graphql_style  = isset( $weight_map[ $weight ] ) ? $weight_map[ $weight ] : 'SOLID';
+		}
 
 		// Build GraphQL query.
 		$query = sprintf(
 			'query { release(version: "%s") { icon(name: "%s") { svgs(filter: { familyStyles: [{ family: %s, style: %s }] }) { html } } } }',
 			$api_version,
 			$name,
-			$family,
-			$fa_style
+			$graphql_family,
+			$graphql_style
 		);
 
 		// Make API request.

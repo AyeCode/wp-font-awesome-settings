@@ -315,91 +315,161 @@ class WP_Font_Awesome_Icon_Library_Generator {
 	 * @return array|WP_Error Array of generated styles on success, WP_Error on failure.
 	 */
 	public function generate_json_files( $icons_data, $version, $is_pro ) {
-		// Organize icons by style.
-		$styles = array(
-			'brands'  => array(),
-			'solid'   => array(),
-			'regular' => array(),
-			'light'   => array(),
-			'thin'    => array(),
-			'duotone' => array(),
-		);
+		if ( $is_pro ) {
+			// PRO: Organize into brands and pro (all other icons).
+			$categories = array(
+				'brands' => array(),
+				'pro'    => array(),
+			);
 
+			foreach ( $icons_data as $icon ) {
+				$icon_id      = $icon['id'];
+				$search_terms = isset( $icon['search_terms'] ) ? $icon['search_terms'] : array();
 
+				// Build search terms string (space-separated).
+				$search_string = ! empty( $search_terms ) ? implode( ' ', $search_terms ) : '';
 
-		foreach ( $icons_data as $icon ) {
-			$icon_id      = $icon['id'];
-			$search_terms = isset( $icon['search_terms'] ) ? $icon['search_terms'] : array();
+				// Build icon string with pipe-delimited format: icon-name|search terms
+				$icon_string = $icon_id;
+				if ( ! empty( $search_string ) ) {
+					$icon_string .= '|' . $search_string;
+				}
 
-			// Build search terms string (space-separated).
-			$search_string = ! empty( $search_terms ) ? implode( ' ', $search_terms ) : '';
+				// Get PRO styles.
+				$available_styles = ! empty( $icon['membership']['pro'] ) ? $icon['membership']['pro'] : array();
 
-			// Build icon string with pipe-delimited format: icon-name|search terms
-			$icon_string = $icon_id;
-			if ( ! empty( $search_string ) ) {
-				$icon_string .= '|' . $search_string;
-			}
-
-			// Determine which styles this icon belongs to.
-			$available_styles = $is_pro && ! empty( $icon['membership']['pro'] )
-				? $icon['membership']['pro']
-				: ( ! empty( $icon['membership']['free'] ) ? $icon['membership']['free'] : array() );
-
-			foreach ( $available_styles as $style ) {
-				if ( isset( $styles[ $style ] ) ) {
-					// Add icon with search terms.
-					$styles[ $style ][] = $icon_string;
+				// Check if this is a brand icon or a regular pro icon.
+				if ( in_array( 'brands', $available_styles, true ) ) {
+					$categories['brands'][] = $icon_string;
+				} else {
+					// All non-brand icons go into the pro category.
+					// These can be used with any style (solid, regular, light, thin, duotone)
+					// and any family (classic, sharp, duotone, sharp-duotone).
+					$categories['pro'][] = $icon_string;
 				}
 			}
-		}
 
-		// Save JSON file for each style and track which ones were generated.
-		$errors           = array();
-		$generated_styles = array();
+			// Save JSON files.
+			$errors              = array();
+			$generated_categories = array();
 
-		foreach ( $styles as $style => $icons ) {
-			if ( empty( $icons ) ) {
-				continue; // Skip empty styles.
+			foreach ( $categories as $category => $icons ) {
+				if ( empty( $icons ) ) {
+					continue;
+				}
+
+				$result = $this->save_json_file( $category, $icons, $version, true );
+				if ( is_wp_error( $result ) ) {
+					$errors[] = $result->get_error_message();
+				} else {
+					$generated_categories[] = $category;
+				}
 			}
 
-			$result = $this->save_json_file( $style, $icons, $version );
-			if ( is_wp_error( $result ) ) {
-				$errors[] = $result->get_error_message();
-			} else {
-				$generated_styles[] = $style;
+			if ( ! empty( $errors ) ) {
+				return new WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
 			}
-		}
 
-		if ( ! empty( $errors ) ) {
-			return new WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
-		}
+			// Return array of successfully generated categories.
+			return $generated_categories;
 
-		// Return array of successfully generated styles.
-		return $generated_styles;
+		} else {
+			// FREE: Organize by style (solid, regular, brands).
+			$styles = array(
+				'brands'  => array(),
+				'solid'   => array(),
+				'regular' => array(),
+			);
+
+			foreach ( $icons_data as $icon ) {
+				$icon_id      = $icon['id'];
+				$search_terms = isset( $icon['search_terms'] ) ? $icon['search_terms'] : array();
+
+				// Build search terms string (space-separated).
+				$search_string = ! empty( $search_terms ) ? implode( ' ', $search_terms ) : '';
+
+				// Build icon string with pipe-delimited format: icon-name|search terms
+				$icon_string = $icon_id;
+				if ( ! empty( $search_string ) ) {
+					$icon_string .= '|' . $search_string;
+				}
+
+				// Get FREE styles.
+				$available_styles = ! empty( $icon['membership']['free'] ) ? $icon['membership']['free'] : array();
+
+				foreach ( $available_styles as $style ) {
+					if ( isset( $styles[ $style ] ) ) {
+						// Add icon with search terms.
+						$styles[ $style ][] = $icon_string;
+					}
+				}
+			}
+
+			// Save JSON file for each style and track which ones were generated.
+			$errors           = array();
+			$generated_styles = array();
+
+			foreach ( $styles as $style => $icons ) {
+				if ( empty( $icons ) ) {
+					continue; // Skip empty styles.
+				}
+
+				$result = $this->save_json_file( $style, $icons, $version, false );
+				if ( is_wp_error( $result ) ) {
+					$errors[] = $result->get_error_message();
+				} else {
+					$generated_styles[] = $style;
+				}
+			}
+
+			if ( ! empty( $errors ) ) {
+				return new WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
+			}
+
+			// Return array of successfully generated styles.
+			return $generated_styles;
+		}
 	}
 
 	/**
-	 * Save JSON file for a specific icon style.
+	 * Save JSON file for a specific icon style or family.
 	 *
-	 * @param string $style   Icon style (e.g., 'solid', 'brands').
-	 * @param array  $icons   Array of icon strings (format: "icon-name|search terms" or "icon-name").
-	 * @param string $version Font Awesome version.
+	 * @param string $style_or_family Icon style (e.g., 'solid', 'brands') or family (e.g., 'classic', 'sharp').
+	 * @param array  $icons           Array of icon strings (format: "icon-name|search terms" or "icon-name").
+	 * @param string $version         Font Awesome version.
+	 * @param bool   $is_pro          Whether this is a PRO family file (adds modifiers field).
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
-	public function save_json_file( $style, $icons, $version ) {
+	public function save_json_file( $style_or_family, $icons, $version, $is_pro = false ) {
 		$upload_dir = wp_upload_dir();
 		$dir        = trailingslashit( $upload_dir['basedir'] ) . 'ayecode-icon-cache/icons-libraries/';
-		$filename   = 'font-awesome-' . $style . '.min.json';
+		$filename   = 'font-awesome-' . $style_or_family . '.min.json';
 		$filepath   = $dir . $filename;
 
-		// Prepare JSON data.
-		$data = array(
-			'prefix'     => 'fa-' . $style . ' fa-',
-			'icon-style' => 'fa-' . $style,
-			'list-icon'  => 'fa-' . $style . ' fa-font-awesome',
-			'version'    => $version,
-			'icons'      => array_values( array_unique( $icons ) ), // Remove duplicates.
-		);
+		// Determine if modifiers should be enabled (all except brands).
+		$has_modifiers = ( 'brands' !== $style_or_family );
+
+		// For the generic "pro" category, use neutral FA classes without style prefix.
+		if ( 'pro' === $style_or_family ) {
+			$data = array(
+				'prefix'     => 'fa-solid fa-',
+				'icon-style' => 'fa-solid',
+				'list-icon'  => 'fa-solid fa-font-awesome',
+				'version'    => $version,
+				'modifiers'  => $has_modifiers,
+				'icons'      => array_values( array_unique( $icons ) ),
+			);
+		} else {
+			// Prepare JSON data for specific styles (brands, solid, regular, etc.).
+			$data = array(
+				'prefix'     => 'fa-' . $style_or_family . ' fa-',
+				'icon-style' => 'fa-' . $style_or_family,
+				'list-icon'  => 'fa-' . $style_or_family . ' fa-font-awesome',
+				'version'    => $version,
+				'modifiers'  => $has_modifiers,
+				'icons'      => array_values( array_unique( $icons ) ),
+			);
+		}
 
 		// Encode to JSON (minified).
 		$json_content = wp_json_encode( $data );
