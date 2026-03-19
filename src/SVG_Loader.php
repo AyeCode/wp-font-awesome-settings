@@ -726,55 +726,29 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	}
 
 	/**
-	 * Sanitize SVG content for security.
+	 * Sanitize SVG content for security using enshrined/svg-sanitize library.
 	 *
-	 * Strips dangerous elements, attributes, and normalizes IDs.
+	 * Uses battle-tested external library for comprehensive SVG sanitization,
+	 * then normalizes IDs to prevent DOM conflicts.
 	 *
 	 * @param string $svg Raw SVG content.
 	 *
 	 * @return string Sanitized SVG.
 	 */
 	private function sanitize_svg_content( string $svg ): string {
-		// Strip dangerous elements.
-		$svg = $this->strip_dangerous_elements( $svg );
+		// Use enshrined/svg-sanitize library for secure sanitization
+		$sanitizer = new \enshrined\svgSanitize\Sanitizer();
+		$sanitizer->removeRemoteReferences( true );
+
+		$svg = $sanitizer->sanitize( $svg );
+
+		// Return empty string if sanitization fails
+		if ( false === $svg || empty( $svg ) ) {
+			return '';
+		}
 
 		// Normalize/remove internal IDs to prevent DOM conflicts.
 		$svg = $this->normalize_svg_ids( $svg );
-
-		return $svg;
-	}
-
-	/**
-	 * Strip dangerous SVG elements and attributes.
-	 *
-	 * Removes script tags, event handlers, and potentially dangerous references.
-	 *
-	 * @param string $svg SVG content.
-	 *
-	 * @return string Cleaned SVG.
-	 */
-	private function strip_dangerous_elements( string $svg ): string {
-		// Remove HTML comments (including Font Awesome attribution comments).
-		$svg = preg_replace( '/<!--.*?-->/s', '', $svg );
-
-		// Remove script tags completely.
-		$svg = preg_replace( '/<script\b[^>]*>.*?<\/script>/is', '', $svg );
-
-		// Remove dangerous tags.
-		$dangerous_tags = array( 'iframe', 'embed', 'object', 'foreignObject' );
-		foreach ( $dangerous_tags as $tag ) {
-			$svg = preg_replace( '/<' . $tag . '\b[^>]*>.*?<\/' . $tag . '>/is', '', $svg );
-			$svg = preg_replace( '/<' . $tag . '\b[^>]*\/>/is', '', $svg );
-		}
-
-		// Remove event handler attributes (onclick, onload, etc.).
-		$svg = preg_replace( '/\s+on\w+\s*=\s*["\'].*?["\']/is', '', $svg );
-
-		// Remove javascript: protocol in attributes.
-		$svg = preg_replace( '/\s+href\s*=\s*["\']javascript:.*?["\']/is', '', $svg );
-
-		// Remove data: protocol in href/src (except safe image types).
-		$svg = preg_replace( '/\s+(href|src)\s*=\s*["\']data:(?!image\/(png|jpg|jpeg|gif|svg))[^"\']*["\']/is', '', $svg );
 
 		return $svg;
 	}

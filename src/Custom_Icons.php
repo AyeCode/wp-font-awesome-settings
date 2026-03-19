@@ -300,17 +300,33 @@ class WP_Font_Awesome_Custom_Icons {
 		// Sanitize SVG content (security).
 		$svg_content = $this->sanitize_svg_content( $svg_content );
 
+		// Check if sanitization failed
+		if ( is_wp_error( $svg_content ) ) {
+			return $svg_content;
+		}
+
 		// Ensure custom directory exists.
 		$custom_dir = $this->get_custom_icons_dir();
 		if ( ! file_exists( $custom_dir ) ) {
 			if ( ! wp_mkdir_p( $custom_dir ) ) {
 				return new WP_Error( 'directory_error', __( 'Failed to create custom icons directory.', 'font-awesome-settings' ) );
 			}
+
+			// Create .htaccess for security (prevent PHP execution)
+			$this->create_htaccess_protection( $custom_dir );
 		}
 
 		// Save file.
 		$filename = $slug . '.svg';
 		$filepath = $custom_dir . $filename;
+
+		// Verify path is within custom directory (prevent directory traversal)
+		$real_custom_dir = realpath( $custom_dir );
+		$real_filepath   = realpath( dirname( $filepath ) );
+
+		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
+			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+		}
 
 		$result = file_put_contents( $filepath, $svg_content );
 
@@ -365,6 +381,20 @@ class WP_Font_Awesome_Custom_Icons {
 		$old_filepath = $custom_dir . $old_slug . '.svg';
 		$new_filepath = $custom_dir . $new_slug . '.svg';
 
+		// Verify paths are within custom directory (prevent directory traversal)
+		$real_custom_dir  = realpath( $custom_dir );
+		$real_old_dir     = realpath( dirname( $old_filepath ) );
+		$real_new_dir     = realpath( dirname( $new_filepath ) );
+
+		if ( false === $real_custom_dir || false === $real_old_dir || 0 !== strpos( $real_old_dir, $real_custom_dir ) ) {
+			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+		}
+
+		// New file directory check (dirname might not exist yet)
+		if ( false !== $real_new_dir && 0 !== strpos( $real_new_dir, $real_custom_dir ) ) {
+			return new WP_Error( 'invalid_path', __( 'Invalid destination path detected.', 'font-awesome-settings' ) );
+		}
+
 		// Rename the file.
 		$result = rename( $old_filepath, $new_filepath );
 
@@ -401,6 +431,14 @@ class WP_Font_Awesome_Custom_Icons {
 			return new WP_Error( 'not_found', __( 'Icon file not found.', 'font-awesome-settings' ) );
 		}
 
+		// Verify path is within custom directory (prevent directory traversal)
+		$real_custom_dir = realpath( $custom_dir );
+		$real_filepath   = realpath( $filepath );
+
+		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
+			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+		}
+
 		// Delete the file.
 		$result = unlink( $filepath );
 
@@ -421,166 +459,26 @@ class WP_Font_Awesome_Custom_Icons {
 	}
 
 	/**
-	 * Sanitize SVG content.
+	 * Sanitize SVG content using enshrined/svg-sanitize library.
 	 *
-	 * Uses WordPress wp_kses() with a whitelist of allowed SVG tags and attributes
-	 * to ensure only safe SVG markup is stored.
+	 * Uses battle-tested external library for comprehensive SVG sanitization
+	 * to prevent XSS attacks and other security vulnerabilities.
 	 *
 	 * @param string $svg SVG content.
-	 * @return string Sanitized SVG.
+	 * @return string|WP_Error Sanitized SVG or WP_Error on failure.
 	 */
 	private function sanitize_svg_content( $svg ) {
-		$allowed_svg_tags = [
-			'svg'      => [
-				'xmlns'              => true,
-				'xmlns:xlink'        => true,
-				'viewbox'            => true,
-				'viewBox'            => true,
-				'width'              => true,
-				'height'             => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'stroke-linejoin'    => true,
-				'role'               => true,
-				'aria-hidden'        => true,
-				'aria-labelledby'    => true,
-				'class'              => true,
-				'style'              => true,
-				'preserveAspectRatio'=> true,
-			],
-			'g'        => [
-				'id'                 => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'stroke-linejoin'    => true,
-				'fill-rule'          => true,
-				'transform'          => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'path'     => [
-				'id'                 => true,
-				'd'                  => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'stroke-linejoin'    => true,
-				'fill-rule'          => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'rect'     => [
-				'id'                 => true,
-				'x'                  => true,
-				'y'                  => true,
-				'width'              => true,
-				'height'             => true,
-				'rx'                 => true,
-				'ry'                 => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'circle'   => [
-				'id'                 => true,
-				'cx'                 => true,
-				'cy'                 => true,
-				'r'                  => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'ellipse'  => [
-				'id'                 => true,
-				'cx'                 => true,
-				'cy'                 => true,
-				'rx'                 => true,
-				'ry'                 => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'line'     => [
-				'id'                 => true,
-				'x1'                 => true,
-				'y1'                 => true,
-				'x2'                 => true,
-				'y2'                 => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'polyline' => [
-				'id'                 => true,
-				'points'             => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'stroke-linejoin'    => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'polygon'  => [
-				'id'                 => true,
-				'points'             => true,
-				'fill'               => true,
-				'stroke'             => true,
-				'stroke-width'       => true,
-				'stroke-linecap'     => true,
-				'stroke-linejoin'    => true,
-				'opacity'            => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'defs'     => [],
-			'clipPath' => [
-				'id'                 => true,
-			],
-			'mask'     => [
-				'id'                 => true,
-			],
-			'title'    => [],
-			'desc'     => [],
-			'use'      => [
-				'xlink:href'         => true,
-				'href'               => true,
-				'x'                  => true,
-				'y'                  => true,
-				'width'              => true,
-				'height'             => true,
-				'class'              => true,
-				'style'              => true,
-			],
-			'symbol'   => [
-				'id'                 => true,
-				'viewBox'            => true,
-				'preserveAspectRatio'=> true,
-			],
-		];
+		// Use enshrined/svg-sanitize library for secure sanitization
+		$sanitizer = new \enshrined\svgSanitize\Sanitizer();
+		$sanitizer->removeRemoteReferences( true );
 
-		// Decode HTML entities and sanitize with wp_kses
-		return wp_kses( html_entity_decode( $svg, ENT_QUOTES ), $allowed_svg_tags );
+		$sanitized_svg = $sanitizer->sanitize( $svg );
+
+		if ( false === $sanitized_svg || empty( $sanitized_svg ) ) {
+			return new WP_Error( 'svg_sanitization_failed', __( 'Failed to sanitize SVG content. The SVG may contain malicious code.', 'font-awesome-settings' ) );
+		}
+
+		return $sanitized_svg;
 	}
 
 	/**

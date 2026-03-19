@@ -17,6 +17,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Load composer autoloader for dependencies.
+ */
+if ( file_exists( dirname( __FILE__ ) . '/vendor/autoload.php' ) ) {
+	require_once dirname( __FILE__ ) . '/vendor/autoload.php';
+}
+
+/**
  * Only add if the class does not already exist.
  */
 if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
@@ -1017,23 +1024,18 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 * @since 2.0.0
 		 */
 		private function sanitize_uploaded_svg( string $svg ): string {
-			// Remove script tags.
-			$svg = preg_replace( '/<script\b[^>]*>.*?<\/script>/is', '', $svg );
+		// Use enshrined/svg-sanitize library for secure sanitization
+		$sanitizer = new \enshrined\svgSanitize\Sanitizer();
+		$sanitizer->removeRemoteReferences( true );
 
-			// Remove dangerous tags.
-			$dangerous_tags = array( 'iframe', 'embed', 'object', 'foreignObject' );
-			foreach ( $dangerous_tags as $tag ) {
-				$svg = preg_replace( '/<' . $tag . '\b[^>]*>.*?<\/' . $tag . '>/is', '', $svg );
-				$svg = preg_replace( '/<' . $tag . '\b[^>]*\/>/is', '', $svg );
-			}
+		$sanitized_svg = $sanitizer->sanitize( $svg );
 
-			// Remove event handler attributes.
-			$svg = preg_replace( '/\s+on\w+\s*=\s*["\'].*?["\']/is', '', $svg );
+		// Return empty string if sanitization fails (fallback)
+		if ( false === $sanitized_svg || empty( $sanitized_svg ) ) {
+			return '';
+		}
 
-			// Remove javascript: protocol.
-			$svg = preg_replace( '/\s+href\s*=\s*["\']javascript:.*?["\']/is', '', $svg );
-
-			return $svg;
+		return $sanitized_svg;
 		}
 
 		/**

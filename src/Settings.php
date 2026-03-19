@@ -422,7 +422,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                                 'type'     => 'textarea',
                                 'label'    => __( 'Icon', 'geodirectory' ),
                                 'description' => __( 'SVG code only', 'geodirectory' ),
-                                'show_if' => "[%icon_type%] == 'code' || ( [%id%] == null || [%id%] == '' )"
+                                'show_if' => "[%icon_type%] == 'code' && ( [%id%] == null || [%id%] == '' )"
                             ],
                             [
                                 'id'       => 'icon_file',
@@ -430,7 +430,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                                 'accept'   => '.svg,image/svg+xml',
                                 'label'    => __( 'Icon', 'geodirectory' ),
                                 'description' => __( 'SVG files only', 'geodirectory' ),
-                                'show_if' => "[%icon_type%] == 'file' || ( [%id%] == null || [%id%] == '' )"
+                                'show_if' => "[%icon_type%] == 'file' && ( [%id%] == null || [%id%] == '' )"
                             ],
                             [
                                 'id' => 'optimize',

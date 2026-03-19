@@ -16,9 +16,15 @@
   ],
   "require": {
     "php": ">=7.4.0",
-    "composer/installers": "~1.0"
+    "composer/installers": "~1.0",
+    "enshrined/svg-sanitize": "^0.22"
   },
   "autoload": {
     "files": ["wp-font-awesome-settings.php"]
+  },
+  "config": {
+    "allow-plugins": {
+      "composer/installers": true
+    }
   }
 }
