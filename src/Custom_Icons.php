@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Custom Icons Helper Class
  *
@@ -9,6 +11,8 @@
  * @since 2.0.0
  */
 
+namespace AyeCode\FontAwesome;
+
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -17,21 +21,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Custom Icons Helper Class
  */
-class WP_Font_Awesome_Custom_Icons {
+class Custom_Icons {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var WP_Font_Awesome_Custom_Icons|null
+	 * @var Custom_Icons|null
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return WP_Font_Awesome_Custom_Icons
+	 * @return Custom_Icons
 	 */
-	public static function instance() {
+	public static function instance(): Custom_Icons {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -50,9 +54,9 @@ class WP_Font_Awesome_Custom_Icons {
 	 *
 	 * @return string Directory path with trailing slash.
 	 */
-	public function get_custom_icons_dir() {
-		$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
-		return $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR;
+	public function get_custom_icons_dir(): string {
+		$svg_loader = SVG_Loader::instance();
+		return $svg_loader->get_icon_cache_dir() . AYECODE_FA_CUSTOM_ICONS_DIR_NAME . DIRECTORY_SEPARATOR;
 	}
 
 	/**
@@ -60,9 +64,9 @@ class WP_Font_Awesome_Custom_Icons {
 	 *
 	 * @return string Directory URL with trailing slash.
 	 */
-	public function get_custom_icons_url() {
-		$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
-		return $svg_loader->get_icon_cache_url() . 'custom/';
+	public function get_custom_icons_url(): string {
+		$svg_loader = SVG_Loader::instance();
+		return $svg_loader->get_icon_cache_url() . AYECODE_FA_CUSTOM_ICONS_DIR_NAME . '/';
 	}
 
 	/**
@@ -70,9 +74,9 @@ class WP_Font_Awesome_Custom_Icons {
 	 *
 	 * @return string Directory path with trailing slash.
 	 */
-	public function get_icon_libraries_dir() {
-		$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
-		return $svg_loader->get_icon_cache_dir() . 'icons-libraries' . DIRECTORY_SEPARATOR;
+	public function get_icon_libraries_dir(): string {
+		$svg_loader = SVG_Loader::instance();
+		return $svg_loader->get_icon_cache_dir() . AYECODE_FA_LIBRARIES_DIR_NAME . DIRECTORY_SEPARATOR;
 	}
 
 	/**
@@ -83,7 +87,7 @@ class WP_Font_Awesome_Custom_Icons {
 	 * @param bool $include_html Whether to include HTML image preview (default: true).
 	 * @return array Array of custom icons with id, slug, and optionally image HTML.
 	 */
-	public function get_all_icons( $include_html = true ) {
+	public function get_all_icons( bool $include_html = true ): array {
 		$icons = [];
 
 		$custom_dir = $this->get_custom_icons_dir();
@@ -142,7 +146,7 @@ class WP_Font_Awesome_Custom_Icons {
 	 * @param string $slug Icon slug (filename without .svg extension).
 	 * @return array|null Icon data array or null if not found.
 	 */
-	public function get_icon( $slug ) {
+	public function get_icon( string $slug ): ?array {
 		$custom_dir = $this->get_custom_icons_dir();
 		$custom_url = $this->get_custom_icons_url();
 		$filename   = sanitize_file_name( $slug ) . '.svg';
@@ -169,7 +173,7 @@ class WP_Font_Awesome_Custom_Icons {
 	 * @param string $slug Icon slug (filename without .svg extension).
 	 * @return bool True if icon exists, false otherwise.
 	 */
-	public function icon_exists( $slug ) {
+	public function icon_exists( string $slug ): bool {
 		$custom_dir = $this->get_custom_icons_dir();
 		$filename   = sanitize_file_name( $slug ) . '.svg';
 		$filepath   = $custom_dir . $filename;
@@ -182,7 +186,7 @@ class WP_Font_Awesome_Custom_Icons {
 	 *
 	 * @return int Number of custom icons.
 	 */
-	public function get_icon_count() {
+	public function get_icon_count(): int {
 		return count( $this->get_all_icons( false ) );
 	}
 
@@ -208,7 +212,7 @@ class WP_Font_Awesome_Custom_Icons {
 	 *
 	 * @return array Array of icon slugs.
 	 */
-	public function get_icon_slugs() {
+	public function get_icon_slugs(): array {
 		$icons = $this->get_all_icons( false );
 		return array_column( $icons, 'slug' );
 	}
@@ -233,12 +237,12 @@ class WP_Font_Awesome_Custom_Icons {
 
 			// Check code size (limit to 5MB equivalent)
 			if ( strlen( $svg_content ) > 5 * 1024 * 1024 ) {
-				return new WP_Error( 'code_too_large', __( 'SVG code exceeds 5MB limit.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'code_too_large', __( 'SVG code exceeds 5MB limit.', 'font-awesome-settings' ) );
 			}
 
 			// Slug is required for code input
 			if ( empty( $slug ) ) {
-				return new WP_Error( 'slug_required', __( 'Icon identifier is required for code input.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'slug_required', __( 'Icon identifier is required for code input.', 'font-awesome-settings' ) );
 			}
 
 		} else {
@@ -247,18 +251,18 @@ class WP_Font_Awesome_Custom_Icons {
 
 			// Validate file array.
 			if ( empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
-				return new WP_Error( 'invalid_file', __( 'Invalid file upload.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'invalid_file', __( 'Invalid file upload.', 'font-awesome-settings' ) );
 			}
 
 			// Check file size (limit to 5MB).
 			if ( $file['size'] > 5 * 1024 * 1024 ) {
-				return new WP_Error( 'file_too_large', __( 'File size exceeds 5MB limit.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'file_too_large', __( 'File size exceeds 5MB limit.', 'font-awesome-settings' ) );
 			}
 
 			// Validate file extension.
 			$ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
 			if ( 'svg' !== $ext ) {
-				return new WP_Error( 'invalid_extension', __( 'File must be an SVG.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'invalid_extension', __( 'File must be an SVG.', 'font-awesome-settings' ) );
 			}
 
 			// Determine slug.
@@ -270,7 +274,7 @@ class WP_Font_Awesome_Custom_Icons {
 			$svg_content = file_get_contents( $file['tmp_name'] );
 
 			if ( false === $svg_content ) {
-				return new WP_Error( 'read_error', __( 'Failed to read uploaded file.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'read_error', __( 'Failed to read uploaded file.', 'font-awesome-settings' ) );
 			}
 		}
 
@@ -279,17 +283,17 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Validate slug is not empty after sanitization.
 		if ( empty( $slug ) ) {
-			return new WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
 		}
 
 		// Check if slug already exists.
 		if ( $this->icon_exists( $slug ) ) {
-			return new WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $slug ) );
+			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $slug ) );
 		}
 
 		// Basic SVG validation - check if it contains <svg> tag.
 		if ( false === strpos( $svg_content, '<svg' ) ) {
-			return new WP_Error( 'invalid_svg', __( 'Content does not appear to be a valid SVG.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_svg', __( 'Content does not appear to be a valid SVG.', 'font-awesome-settings' ) );
 		}
 
 		// Optimize SVG if requested (only for initial add, not updates).
@@ -301,7 +305,7 @@ class WP_Font_Awesome_Custom_Icons {
 		$svg_content = $this->sanitize_svg_content( $svg_content );
 
 		// Check if sanitization failed
-		if ( is_wp_error( $svg_content ) ) {
+		if ( \is_wp_error( $svg_content ) ) {
 			return $svg_content;
 		}
 
@@ -309,11 +313,11 @@ class WP_Font_Awesome_Custom_Icons {
 		$custom_dir = $this->get_custom_icons_dir();
 		if ( ! file_exists( $custom_dir ) ) {
 			if ( ! wp_mkdir_p( $custom_dir ) ) {
-				return new WP_Error( 'directory_error', __( 'Failed to create custom icons directory.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'directory_error', __( 'Failed to create custom icons directory.', 'font-awesome-settings' ) );
 			}
 
-			// Create .htaccess for security (prevent PHP execution)
-			$this->create_htaccess_protection( $custom_dir );
+			// Create index.php for security (prevent directory listing)
+			$this->create_index_protection( $custom_dir );
 		}
 
 		// Save file.
@@ -325,18 +329,18 @@ class WP_Font_Awesome_Custom_Icons {
 		$real_filepath   = realpath( dirname( $filepath ) );
 
 		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
-			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
 		}
 
 		$result = file_put_contents( $filepath, $svg_content );
 
 		if ( false === $result ) {
-			return new WP_Error( 'save_error', __( 'Failed to save icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'save_error', __( 'Failed to save icon file.', 'font-awesome-settings' ) );
 		}
 
 		// Generate JSON file.
 		$json_result = $this->generate_custom_icons_json();
-		if ( is_wp_error( $json_result ) ) {
+		if ( \is_wp_error( $json_result ) ) {
 			return $json_result;
 		}
 
@@ -358,12 +362,12 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Validate slugs.
 		if ( empty( $old_slug ) || empty( $new_slug ) ) {
-			return new WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
 		}
 
 		// Check if old icon exists.
 		if ( ! $this->icon_exists( $old_slug ) ) {
-			return new WP_Error( 'not_found', sprintf( __( 'Icon "%s" not found.', 'font-awesome-settings' ), $old_slug ) );
+			return new \WP_Error( 'not_found', sprintf( __( 'Icon "%s" not found.', 'font-awesome-settings' ), $old_slug ) );
 		}
 
 		// If slug hasn't changed, just return the icon.
@@ -373,7 +377,7 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Check if new slug already exists.
 		if ( $this->icon_exists( $new_slug ) ) {
-			return new WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $new_slug ) );
+			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $new_slug ) );
 		}
 
 		// Get file paths.
@@ -387,19 +391,19 @@ class WP_Font_Awesome_Custom_Icons {
 		$real_new_dir     = realpath( dirname( $new_filepath ) );
 
 		if ( false === $real_custom_dir || false === $real_old_dir || 0 !== strpos( $real_old_dir, $real_custom_dir ) ) {
-			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
 		}
 
 		// New file directory check (dirname might not exist yet)
 		if ( false !== $real_new_dir && 0 !== strpos( $real_new_dir, $real_custom_dir ) ) {
-			return new WP_Error( 'invalid_path', __( 'Invalid destination path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid destination path detected.', 'font-awesome-settings' ) );
 		}
 
 		// Rename the file.
 		$result = rename( $old_filepath, $new_filepath );
 
 		if ( ! $result ) {
-			return new WP_Error( 'rename_error', __( 'Failed to rename icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'rename_error', __( 'Failed to rename icon file.', 'font-awesome-settings' ) );
 		}
 
 		// Clear object cache for old slug.
@@ -407,7 +411,7 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Generate JSON file.
 		$json_result = $this->generate_custom_icons_json();
-		if ( is_wp_error( $json_result ) ) {
+		if ( \is_wp_error( $json_result ) ) {
 			return $json_result;
 		}
 
@@ -428,7 +432,7 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Check if file exists.
 		if ( ! file_exists( $filepath ) || ! is_file( $filepath ) ) {
-			return new WP_Error( 'not_found', __( 'Icon file not found.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'not_found', __( 'Icon file not found.', 'font-awesome-settings' ) );
 		}
 
 		// Verify path is within custom directory (prevent directory traversal)
@@ -436,14 +440,14 @@ class WP_Font_Awesome_Custom_Icons {
 		$real_filepath   = realpath( $filepath );
 
 		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
-			return new WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
 		}
 
 		// Delete the file.
 		$result = unlink( $filepath );
 
 		if ( ! $result ) {
-			return new WP_Error( 'delete_error', __( 'Failed to delete icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'delete_error', __( 'Failed to delete icon file.', 'font-awesome-settings' ) );
 		}
 
 		// Clear object cache for this icon.
@@ -451,7 +455,7 @@ class WP_Font_Awesome_Custom_Icons {
 
 		// Generate JSON file.
 		$json_result = $this->generate_custom_icons_json();
-		if ( is_wp_error( $json_result ) ) {
+		if ( \is_wp_error( $json_result ) ) {
 			return $json_result;
 		}
 
@@ -475,7 +479,7 @@ class WP_Font_Awesome_Custom_Icons {
 		$sanitized_svg = $sanitizer->sanitize( $svg );
 
 		if ( false === $sanitized_svg || empty( $sanitized_svg ) ) {
-			return new WP_Error( 'svg_sanitization_failed', __( 'Failed to sanitize SVG content. The SVG may contain malicious code.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'svg_sanitization_failed', __( 'Failed to sanitize SVG content. The SVG may contain malicious code.', 'font-awesome-settings' ) );
 		}
 
 		return $sanitized_svg;
@@ -586,8 +590,12 @@ class WP_Font_Awesome_Custom_Icons {
 		// Ensure directory exists.
 		if ( ! file_exists( $libraries_dir ) ) {
 			if ( ! wp_mkdir_p( $libraries_dir ) ) {
-				return new WP_Error( 'directory_error', __( 'Failed to create icons-libraries directory.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'directory_error', __( 'Failed to create icons-libraries directory.', 'font-awesome-settings' ) );
 			}
+			// Add index.php protection to cache and libraries directories.
+			$cache_dir = dirname( $libraries_dir );
+			$this->create_index_protection( $cache_dir );
+			$this->create_index_protection( $libraries_dir );
 		}
 
 		// Get all custom icons (without HTML).
@@ -607,7 +615,7 @@ class WP_Font_Awesome_Custom_Icons {
 			'prefix'     => 'aui-icon-',
 			'icon-style' => 'custom',
 			'list-icon'  => 'aui-icon-custom',
-			'base-path'  => 'ayecode-icon-cache/custom',
+			'base-path'  => AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_CUSTOM_ICONS_DIR_NAME,
 			'icons'      => $icons_list,
 		];
 
@@ -615,17 +623,40 @@ class WP_Font_Awesome_Custom_Icons {
 		$json_content = wp_json_encode( $json_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
 		if ( false === $json_content ) {
-			return new WP_Error( 'json_encode_error', __( 'Failed to encode JSON data.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'json_encode_error', __( 'Failed to encode JSON data.', 'font-awesome-settings' ) );
 		}
 
 		// Write JSON file.
-		$json_filepath = $libraries_dir . 'custom-icons.json';
+		$json_filepath = $libraries_dir . AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME;
 		$result = file_put_contents( $json_filepath, $json_content );
 
 		if ( false === $result ) {
-			return new WP_Error( 'file_write_error', __( 'Failed to write custom-icons.json file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'file_write_error', sprintf( __( 'Failed to write %s file.', 'font-awesome-settings' ), AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME ) );
 		}
 
 		return true;
+	}
+
+	/**
+	 * Create index.php protection file in a directory.
+	 *
+	 * Prevents direct directory listing and PHP execution by adding an index.php file.
+	 * More compatible across servers than .htaccess.
+	 *
+	 * @param string $directory Directory path with trailing slash.
+	 * @return bool True on success, false on failure.
+	 */
+	private function create_index_protection( string $directory ): bool {
+		$index_file = trailingslashit( $directory ) . 'index.php';
+
+		// Don't overwrite if it already exists.
+		if ( file_exists( $index_file ) ) {
+			return true;
+		}
+
+		$content = "<?php\n// Silence is golden.\n";
+		$result = file_put_contents( $index_file, $content );
+
+		return false !== $result;
 	}
 }

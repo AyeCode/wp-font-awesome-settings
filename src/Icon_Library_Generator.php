@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Font Awesome Icon Library Generator
  *
@@ -6,6 +8,8 @@
  *
  * @package WP_Font_Awesome_Settings
  */
+
+namespace AyeCode\FontAwesome;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Icon Library Generator class.
  */
-class WP_Font_Awesome_Icon_Library_Generator {
+class Icon_Library_Generator {
 
 	/**
 	 * Font Awesome API base URL.
@@ -40,16 +44,16 @@ class WP_Font_Awesome_Icon_Library_Generator {
 	/**
 	 * Instance of this class.
 	 *
-	 * @var WP_Font_Awesome_Icon_Library_Generator
+	 * @var Icon_Library_Generator
 	 */
 	private static $instance = null;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return WP_Font_Awesome_Icon_Library_Generator
+	 * @return Icon_Library_Generator
 	 */
-	public static function instance() {
+	public static function instance(): Icon_Library_Generator {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -70,7 +74,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 	 * @return bool|WP_Error True on success, WP_Error on failure.
 	 */
 	public function generate_icon_libraries( $settings ) {
-		$version = ! empty( $settings['version'] ) ? $settings['version'] : '6.7.2';
+		$version = ! empty( $settings['version'] ) ? $settings['version'] : AYECODE_FA_DEFAULT_VERSION;
 		$is_pro  = ! empty( $settings['pro'] );
 		$api_key = ! empty( $settings['api_key'] ) ? $settings['api_key'] : '';
 
@@ -81,7 +85,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 			$icons_data = $this->fetch_free_icons( $version );
 		}
 
-		if ( is_wp_error( $icons_data ) ) {
+		if ( \is_wp_error( $icons_data ) ) {
 			return $icons_data;
 		}
 
@@ -103,8 +107,8 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		// Fetch YAML file.
 		$response = wp_remote_get( $url, array( 'timeout' => 30 ) );
 
-		if ( is_wp_error( $response ) ) {
-			return new WP_Error(
+		if ( \is_wp_error( $response ) ) {
+			return new \WP_Error(
 				'fa_fetch_failed',
 				sprintf( __( 'Failed to fetch icons from GitHub: %s', 'font-awesome-settings' ), $response->get_error_message() )
 			);
@@ -112,7 +116,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 
 		$status_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $status_code ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_fetch_failed',
 				sprintf( __( 'GitHub returned status code %d for URL: %s', 'font-awesome-settings' ), $status_code, $url )
 			);
@@ -120,7 +124,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 
 		$yml_content = wp_remote_retrieve_body( $response );
 		if ( empty( $yml_content ) ) {
-			return new WP_Error( 'fa_empty_response', __( 'Empty response from GitHub', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_empty_response', __( 'Empty response from GitHub', 'font-awesome-settings' ) );
 		}
 
 		// Parse YAML.
@@ -140,14 +144,14 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		try {
 			$data = spyc_load( $yml_content );
 		} catch ( Exception $e ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_parse_failed',
 				sprintf( __( 'Failed to parse YAML: %s', 'font-awesome-settings' ), $e->getMessage() )
 			);
 		}
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
-			return new WP_Error( 'fa_invalid_yaml', __( 'Invalid YAML data', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_invalid_yaml', __( 'Invalid YAML data', 'font-awesome-settings' ) );
 		}
 
 		// Convert YAML structure to our format.
@@ -186,7 +190,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 	public function fetch_pro_icons( $version, $api_key ) {
 		// Get auth token.
 		$auth_token = $this->get_auth_token( $api_key );
-		if ( is_wp_error( $auth_token ) ) {
+		if ( \is_wp_error( $auth_token ) ) {
 			return $auth_token;
 		}
 
@@ -213,8 +217,8 @@ class WP_Font_Awesome_Icon_Library_Generator {
 
 
 
-		if ( is_wp_error( $response ) ) {
-			return new WP_Error(
+		if ( \is_wp_error( $response ) ) {
+			return new \WP_Error(
 				'fa_api_failed',
 				sprintf( __( 'Failed to fetch icons from Font Awesome API: %s', 'font-awesome-settings' ), $response->get_error_message() )
 			);
@@ -222,7 +226,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 
 		$status_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $status_code ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_api_failed',
 				sprintf( __( 'Font Awesome API returned status code %d', 'font-awesome-settings' ), $status_code )
 			);
@@ -232,7 +236,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		$data = json_decode( $body, true );
 
 		if ( empty( $data['data']['release']['icons'] ) ) {
-			return new WP_Error( 'fa_invalid_api_response', __( 'Invalid API response structure', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_invalid_api_response', __( 'Invalid API response structure', 'font-awesome-settings' ) );
 		}
 
 		// Transform GraphQL response to our format (without search terms for now).
@@ -276,8 +280,8 @@ class WP_Font_Awesome_Icon_Library_Generator {
 			)
 		);
 
-		if ( is_wp_error( $response ) ) {
-			return new WP_Error(
+		if ( \is_wp_error( $response ) ) {
+			return new \WP_Error(
 				'fa_auth_failed',
 				sprintf( __( 'Failed to authenticate with Font Awesome API: %s', 'font-awesome-settings' ), $response->get_error_message() )
 			);
@@ -285,7 +289,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 
 		$status_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $status_code ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_auth_failed',
 				sprintf( __( 'Font Awesome API authentication returned status code %d', 'font-awesome-settings' ), $status_code )
 			);
@@ -295,7 +299,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		$data = json_decode( $body, true );
 
 		if ( empty( $data['access_token'] ) ) {
-			return new WP_Error( 'fa_auth_failed', __( 'Invalid API key or authentication failed', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_auth_failed', __( 'Invalid API key or authentication failed', 'font-awesome-settings' ) );
 		}
 
 		$token = $data['access_token'];
@@ -359,7 +363,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 				}
 
 				$result = $this->save_json_file( $category, $icons, $version, true );
-				if ( is_wp_error( $result ) ) {
+				if ( \is_wp_error( $result ) ) {
 					$errors[] = $result->get_error_message();
 				} else {
 					$generated_categories[] = $category;
@@ -367,7 +371,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 			}
 
 			if ( ! empty( $errors ) ) {
-				return new WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
+				return new \WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
 			}
 
 			// Return array of successfully generated categories.
@@ -415,7 +419,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 				}
 
 				$result = $this->save_json_file( $style, $icons, $version, false );
-				if ( is_wp_error( $result ) ) {
+				if ( \is_wp_error( $result ) ) {
 					$errors[] = $result->get_error_message();
 				} else {
 					$generated_styles[] = $style;
@@ -423,7 +427,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 			}
 
 			if ( ! empty( $errors ) ) {
-				return new WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
+				return new \WP_Error( 'fa_save_failed', implode( '; ', $errors ) );
 			}
 
 			// Return array of successfully generated styles.
@@ -442,8 +446,8 @@ class WP_Font_Awesome_Icon_Library_Generator {
 	 */
 	public function save_json_file( $style_or_family, $icons, $version, $is_pro = false ) {
 		$upload_dir = wp_upload_dir();
-		$dir        = trailingslashit( $upload_dir['basedir'] ) . 'ayecode-icon-cache/icons-libraries/';
-		$filename   = 'font-awesome-' . $style_or_family . '.min.json';
+		$dir        = trailingslashit( $upload_dir['basedir'] ) . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
+		$filename   = sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style_or_family );
 		$filepath   = $dir . $filename;
 
 		// Determine if modifiers should be enabled (all except brands).
@@ -475,7 +479,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		$json_content = wp_json_encode( $data );
 
 		if ( false === $json_content ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_json_encode_failed',
 				sprintf( __( 'Failed to encode JSON for style: %s', 'font-awesome-settings' ), $style )
 			);
@@ -484,6 +488,10 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		// Ensure directory exists.
 		if ( ! file_exists( $dir ) ) {
 			wp_mkdir_p( $dir );
+			// Add index.php protection to cache and libraries directories.
+			$cache_dir = dirname( $dir );
+			$this->create_index_protection( $cache_dir );
+			$this->create_index_protection( $dir );
 		}
 
 		// Write file.
@@ -491,7 +499,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		$result = file_put_contents( $filepath, $json_content );
 
 		if ( false === $result ) {
-			return new WP_Error(
+			return new \WP_Error(
 				'fa_file_write_failed',
 				sprintf( __( 'Failed to write JSON file: %s', 'font-awesome-settings' ), $filepath )
 			);
@@ -518,11 +526,11 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		}
 
 		$upload_dir = wp_upload_dir();
-		$dir        = trailingslashit( $upload_dir['basedir'] ) . 'ayecode-icon-cache/icons-libraries/';
+		$dir        = trailingslashit( $upload_dir['basedir'] ) . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
 		$errors     = array();
 
 		foreach ( $styles_to_remove as $style ) {
-			$filename = 'font-awesome-' . $style . '.min.json';
+			$filename = sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
 			$filepath = $dir . $filename;
 
 			if ( file_exists( $filepath ) ) {
@@ -534,7 +542,7 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		}
 
 		if ( ! empty( $errors ) ) {
-			return new WP_Error( 'fa_cleanup_failed', implode( '; ', $errors ) );
+			return new \WP_Error( 'fa_cleanup_failed', implode( '; ', $errors ) );
 		}
 
 		return true;
@@ -564,5 +572,28 @@ class WP_Font_Awesome_Icon_Library_Generator {
 		}
 
 		return $version;
+	}
+
+	/**
+	 * Create index.php protection file in a directory.
+	 *
+	 * Prevents direct directory listing and PHP execution by adding an index.php file.
+	 * More compatible across servers than .htaccess.
+	 *
+	 * @param string $directory Directory path.
+	 * @return bool True on success, false on failure.
+	 */
+	private function create_index_protection( string $directory ): bool {
+		$index_file = trailingslashit( $directory ) . 'index.php';
+
+		// Don't overwrite if it already exists.
+		if ( file_exists( $index_file ) ) {
+			return true;
+		}
+
+		$content = "<?php\n// Silence is golden.\n";
+		$result = file_put_contents( $index_file, $content );
+
+		return false !== $result;
 	}
 }

@@ -20,7 +20,12 @@
     "enshrined/svg-sanitize": "^0.22"
   },
   "autoload": {
-    "files": ["wp-font-awesome-settings.php"]
+    "psr-4": {
+      "AyeCode\\FontAwesome\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
   },
   "config": {
     "allow-plugins": {

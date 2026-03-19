@@ -42,7 +42,7 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
     $settings = WP_Font_Awesome_Settings::instance()->settings;
 
     // Parse identifier first to check if it's a custom icon
-    $parsed = AyeCode_Font_Awesome_SVG_Loader::instance()->parse_identifier( $identifier );
+    $parsed = \AyeCode\FontAwesome\SVG_Loader::instance()->parse_identifier( $identifier );
 
     if ( is_wp_error( $parsed ) ) {
         return '';
@@ -68,7 +68,7 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
             $options['class'] = $icon_class;
         }
 
-        return AyeCode_Font_Awesome_SVG_Loader::instance()->get_inline_icon( $identifier, $options );
+        return \AyeCode\FontAwesome\SVG_Loader::instance()->get_inline_icon( $identifier, $options );
     }
 
     // Otherwise, render as <i> tag for CSS/JS/KIT (Font Awesome icons only)
@@ -140,7 +140,7 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
  * @return array Array of custom icons with id, slug, filename, filepath, url, and optionally image HTML.
  */
 function ayecode_get_custom_icons( $include_html = true ) {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_all_icons( $include_html );
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_all_icons( $include_html );
 }
 
 /**
@@ -156,7 +156,7 @@ function ayecode_get_custom_icons( $include_html = true ) {
  * @return array|null Icon data array or null if not found.
  */
 function ayecode_get_custom_icon( $slug ) {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_icon( $slug );
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_icon( $slug );
 }
 
 /**
@@ -171,7 +171,7 @@ function ayecode_get_custom_icon( $slug ) {
  * @return bool True if icon exists, false otherwise.
  */
 function ayecode_custom_icon_exists( $slug ) {
-	return WP_Font_Awesome_Custom_Icons::instance()->icon_exists( $slug );
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->icon_exists( $slug );
 }
 
 /**
@@ -184,7 +184,7 @@ function ayecode_custom_icon_exists( $slug ) {
  * @return int Number of custom icons.
  */
 function ayecode_get_custom_icon_count() {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_icon_count();
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_icon_count();
 }
 
 /**
@@ -199,7 +199,7 @@ function ayecode_get_custom_icon_count() {
  * @return array Array of icon slugs.
  */
 function ayecode_get_custom_icon_slugs() {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_icon_slugs();
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_icon_slugs();
 }
 
 /**
@@ -208,7 +208,7 @@ function ayecode_get_custom_icon_slugs() {
  * @return string Directory path with trailing slash.
  */
 function ayecode_get_custom_icons_dir() {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_custom_icons_dir();
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_custom_icons_dir();
 }
 
 /**
@@ -217,7 +217,7 @@ function ayecode_get_custom_icons_dir() {
  * @return string Directory URL with trailing slash.
  */
 function ayecode_get_custom_icons_url() {
-	return WP_Font_Awesome_Custom_Icons::instance()->get_custom_icons_url();
+	return \AyeCode\FontAwesome\Custom_Icons::instance()->get_custom_icons_url();
 }
 
 /**

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * JIT SVG Icon Loader for Font Awesome
  *
@@ -8,6 +10,8 @@
  * @package WP_Font_Awesome_Settings
  * @since 2.0.0
  */
+
+namespace AyeCode\FontAwesome;
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -20,12 +24,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Implements a Just-In-Time SVG rendering engine to replace webfont/JS library loading.
  * Uses a three-layer caching strategy: Object Cache → Filesystem → Remote CDN.
  */
-class AyeCode_Font_Awesome_SVG_Loader {
+class SVG_Loader {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var AyeCode_Font_Awesome_SVG_Loader|null
+	 * @var SVG_Loader|null
 	 */
 	private static $instance = null;
 
@@ -59,16 +63,16 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	/**
 	 * Reference to main settings instance.
 	 *
-	 * @var WP_Font_Awesome_Settings
+	 * @var \WP_Font_Awesome_Settings
 	 */
 	private $settings_instance;
 
 	/**
 	 * Get singleton instance.
 	 *
-	 * @return AyeCode_Font_Awesome_SVG_Loader
+	 * @return SVG_Loader
 	 */
-	public static function instance() {
+	public static function instance(): SVG_Loader {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -79,7 +83,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 * Constructor.
 	 */
 	private function __construct() {
-		$this->settings_instance = WP_Font_Awesome_Settings::instance();
+		$this->settings_instance = \WP_Font_Awesome_Settings::instance();
 	}
 
 	/**
@@ -97,7 +101,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Parse the identifier to determine routing.
 		$parsed = $this->parse_identifier( $identifier );
 //        print_r($parsed);echo '###'.$identifier;
-		if ( is_wp_error( $parsed ) ) {
+		if ( \is_wp_error( $parsed ) ) {
 			return '';
 		}
 
@@ -127,7 +131,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 
 		// Layer 2: Check filesystem cache.
 		$svg = $this->get_from_filesystem( $style, $name );
-		if ( $svg && ! is_wp_error( $svg ) ) {
+		if ( $svg && ! \is_wp_error( $svg ) ) {
 			// Save to object cache for faster future access.
 			$this->save_to_object_cache( $cache_key, $svg );
 			return $this->apply_svg_options( $svg, $options );
@@ -148,7 +152,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			// Release the lock.
 			$this->release_fetch_lock( $cache_key );
 
-			if ( is_wp_error( $svg ) ) {
+			if ( \is_wp_error( $svg ) ) {
 				return '';
 			}
 
@@ -202,7 +206,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Parse Font Awesome format.
 		$parts = explode( ' ', $identifier );
 		if ( count( $parts ) < 2 ) {
-			return new WP_Error( 'invalid_identifier', 'Invalid icon identifier format. Expected "fa-{style} fa-{name}" or "fas fa-{name}".' );
+			return new \WP_Error( 'invalid_identifier', 'Invalid icon identifier format. Expected "fa-{style} fa-{name}" or "fas fa-{name}".' );
 		}
 
 		// Initialize family and weight.
@@ -300,7 +304,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 
 			// Validate we found an icon name.
 			if ( null === $icon_name ) {
-				return new WP_Error( 'invalid_identifier', 'Could not identify icon name in identifier.' );
+				return new \WP_Error( 'invalid_identifier', 'Could not identify icon name in identifier.' );
 			}
 
 			// Map family + weight to filesystem style.
@@ -337,7 +341,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Validate style.
 		$valid_styles = $is_pro ? $this->available_styles['pro'] : $this->available_styles['free'];
 		if ( ! in_array( $style, $valid_styles, true ) ) {
-			return new WP_Error( 'invalid_style', sprintf( 'Invalid icon style "%s".', $style ) );
+			return new \WP_Error( 'invalid_style', sprintf( 'Invalid icon style "%s".', $style ) );
 		}
 
 		return array(
@@ -383,14 +387,14 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		$file_path = $this->get_icon_cache_dir() . $style . DIRECTORY_SEPARATOR . $name . '.svg';
 
 		if ( ! file_exists( $file_path ) ) {
-			return new WP_Error( 'file_not_found', 'SVG file not found in cache.' );
+			return new \WP_Error( 'file_not_found', 'SVG file not found in cache.' );
 		}
 
 		// Use WP_Filesystem for reading.
 		$svg = file_get_contents( $file_path );
 
 		if ( false === $svg ) {
-			return new WP_Error( 'read_error', 'Failed to read SVG file from cache.' );
+			return new \WP_Error( 'read_error', 'Failed to read SVG file from cache.' );
 		}
 
 		return $svg;
@@ -434,18 +438,18 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			)
 		);
 
-		if ( is_wp_error( $response ) ) {
+		if ( \is_wp_error( $response ) ) {
 			return $response;
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $status_code ) {
-			return new WP_Error( 'fetch_failed', sprintf( 'Failed to fetch SVG from CDN. Status: %d', $status_code ) );
+			return new \WP_Error( 'fetch_failed', sprintf( 'Failed to fetch SVG from CDN. Status: %d', $status_code ) );
 		}
 
 		$svg = wp_remote_retrieve_body( $response );
 		if ( empty( $svg ) ) {
-			return new WP_Error( 'empty_response', 'Received empty SVG from CDN.' );
+			return new \WP_Error( 'empty_response', 'Received empty SVG from CDN.' );
 		}
 
 		return $svg;
@@ -466,7 +470,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Get or refresh auth token.
 		$auth_token = $this->get_auth_token();
 
-		if ( is_wp_error( $auth_token ) ) {
+		if ( \is_wp_error( $auth_token ) ) {
 			return $auth_token;
 		}
 
@@ -522,7 +526,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			)
 		);
 
-		if ( is_wp_error( $response ) ) {
+		if ( \is_wp_error( $response ) ) {
 			return $response;
 		}
 
@@ -533,7 +537,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			// Force refresh the token.
 			$auth_token = $this->get_auth_token( true );
 
-			if ( is_wp_error( $auth_token ) ) {
+			if ( \is_wp_error( $auth_token ) ) {
 				return $auth_token;
 			}
 
@@ -550,7 +554,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 				)
 			);
 
-			if ( is_wp_error( $response ) ) {
+			if ( \is_wp_error( $response ) ) {
 				return $response;
 			}
 
@@ -558,7 +562,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		}
 
 		if ( 200 !== $status_code ) {
-			return new WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed. Status: %d', $status_code ) );
+			return new \WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed. Status: %d', $status_code ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
@@ -571,7 +575,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 					// Force refresh the token.
 					$auth_token = $this->get_auth_token( true );
 
-					if ( is_wp_error( $auth_token ) ) {
+					if ( \is_wp_error( $auth_token ) ) {
 						return $auth_token;
 					}
 
@@ -588,14 +592,14 @@ class AyeCode_Font_Awesome_SVG_Loader {
 						)
 					);
 
-					if ( is_wp_error( $response ) ) {
+					if ( \is_wp_error( $response ) ) {
 						return $response;
 					}
 
 					$status_code = wp_remote_retrieve_response_code( $response );
 
 					if ( 200 !== $status_code ) {
-						return new WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed after retry. Status: %d', $status_code ) );
+						return new \WP_Error( 'api_request_failed', sprintf( 'Font Awesome API request failed after retry. Status: %d', $status_code ) );
 					}
 
 					$body = wp_remote_retrieve_body( $response );
@@ -603,7 +607,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 
 					// Check again for errors after retry
 					if ( ! empty( $data['errors'] ) ) {
-						return new WP_Error( 'api_error', 'Font Awesome API returned errors: ' . wp_json_encode( $data['errors'] ) );
+						return new \WP_Error( 'api_error', 'Font Awesome API returned errors: ' . wp_json_encode( $data['errors'] ) );
 					}
 
 					break; // Exit the error loop after retry
@@ -612,7 +616,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		}
 
 		if ( empty( $data['data']['release']['icon']['svgs'][0]['html'] ) ) {
-			return new WP_Error( 'icon_not_found', sprintf( 'Icon "%s" not found in Font Awesome API response.', $name ) );
+			return new \WP_Error( 'icon_not_found', sprintf( 'Icon "%s" not found in Font Awesome API response.', $name ) );
 		}
 
 		// Extract and unescape SVG.
@@ -642,7 +646,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 
 		// Check if we have an api_key.
 		if ( empty( $settings['api_key'] ) ) {
-			return new WP_Error( 'missing_api_key', 'Font Awesome API Key is required for Pro v6/v7 icons.' );
+			return new \WP_Error( 'missing_api_key', 'Font Awesome API Key is required for Pro v6/v7 icons.' );
 		}
 
 		// Exchange api_key for auth_token.
@@ -656,21 +660,21 @@ class AyeCode_Font_Awesome_SVG_Loader {
 			)
 		);
 
-		if ( is_wp_error( $response ) ) {
+		if ( \is_wp_error( $response ) ) {
 			return $response;
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
 
 		if ( 200 !== $status_code ) {
-			return new WP_Error( 'token_exchange_failed', sprintf( 'Failed to exchange API key for auth token. Status: %d', $status_code ) );
+			return new \WP_Error( 'token_exchange_failed', sprintf( 'Failed to exchange API key for auth token. Status: %d', $status_code ) );
 		}
 
 		$body = wp_remote_retrieve_body( $response );
 		$data = json_decode( $body, true );
 
 		if ( empty( $data['access_token'] ) ) {
-			return new WP_Error( 'invalid_token_response', 'Invalid response from Font Awesome token endpoint.' );
+			return new \WP_Error( 'invalid_token_response', 'Invalid response from Font Awesome token endpoint.' );
 		}
 
 		$auth_token = $data['access_token'];
@@ -926,7 +930,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 */
 	public function get_icon_cache_dir(): string {
 		$upload_dir = wp_upload_dir( null, false );
-		return $upload_dir['basedir'] . DIRECTORY_SEPARATOR . 'ayecode-icon-cache' . DIRECTORY_SEPARATOR;
+		return $upload_dir['basedir'] . DIRECTORY_SEPARATOR . AYECODE_FA_CACHE_DIR_NAME . DIRECTORY_SEPARATOR;
 	}
 
 	/**
@@ -936,7 +940,7 @@ class AyeCode_Font_Awesome_SVG_Loader {
 	 */
 	public function get_icon_cache_url(): string {
 		$upload_dir = wp_upload_dir( null, false );
-		return $upload_dir['baseurl'] . '/ayecode-icon-cache/';
+		return $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/';
 	}
 
 	/**
@@ -952,13 +956,13 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		// Try to create directory if it doesn't exist.
 		if ( ! file_exists( $cache_dir ) ) {
 			if ( ! wp_mkdir_p( $cache_dir ) ) {
-				return new WP_Error( 'mkdir_failed', 'Failed to create icon cache directory.' );
+				return new \WP_Error( 'mkdir_failed', 'Failed to create icon cache directory.' );
 			}
 		}
 
 		// Check if writable.
 		if ( ! is_writable( $cache_dir ) ) {
-			return new WP_Error( 'not_writable', 'Icon cache directory is not writable.' );
+			return new \WP_Error( 'not_writable', 'Icon cache directory is not writable.' );
 		}
 
 		return true;
@@ -988,14 +992,14 @@ class AyeCode_Font_Awesome_SVG_Loader {
 		}
 
 		if ( empty( $wp_filesystem ) ) {
-			return new WP_Error( 'filesystem_error', 'Failed to initialize WP_Filesystem.' );
+			return new \WP_Error( 'filesystem_error', 'Failed to initialize WP_Filesystem.' );
 		}
 
 		// Delete the directory and all contents.
 		$result = $wp_filesystem->delete( $cache_dir, true );
 
 		if ( ! $result ) {
-			return new WP_Error( 'delete_failed', 'Failed to delete icon cache directory.' );
+			return new \WP_Error( 'delete_failed', 'Failed to delete icon cache directory.' );
 		}
 
 		// Recreate the directory.

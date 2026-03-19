@@ -17,6 +17,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * Plugin Constants - Can be overridden in mu-plugins
+ */
+if ( ! defined( 'AYECODE_FA_DEFAULT_VERSION' ) ) {
+	define( 'AYECODE_FA_DEFAULT_VERSION', '6.7.2' );
+}
+if ( ! defined( 'AYECODE_FA_CACHE_DIR_NAME' ) ) {
+	define( 'AYECODE_FA_CACHE_DIR_NAME', 'ayecode-icon-cache' );
+}
+if ( ! defined( 'AYECODE_FA_LIBRARIES_DIR_NAME' ) ) {
+	define( 'AYECODE_FA_LIBRARIES_DIR_NAME', 'icons-libraries' );
+}
+if ( ! defined( 'AYECODE_FA_CUSTOM_ICONS_DIR_NAME' ) ) {
+	define( 'AYECODE_FA_CUSTOM_ICONS_DIR_NAME', 'custom' );
+}
+if ( ! defined( 'AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME' ) ) {
+	define( 'AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME', 'custom-icons.json' );
+}
+if ( ! defined( 'AYECODE_FA_JSON_FILENAME_PATTERN' ) ) {
+	define( 'AYECODE_FA_JSON_FILENAME_PATTERN', 'font-awesome-%s.min.json' );
+}
+
+/**
  * Load composer autoloader for dependencies.
  */
 if ( file_exists( dirname( __FILE__ ) . '/vendor/autoload.php' ) ) {
@@ -439,6 +461,16 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			);
 
 			$settings = wp_parse_args( $db_settings, $defaults );
+
+			// Normalize local_icon_styles to always be an array.
+			if ( isset( $settings['local_icon_styles'] ) ) {
+				if ( is_string( $settings['local_icon_styles'] ) && ! empty( $settings['local_icon_styles'] ) ) {
+					$decoded = json_decode( $settings['local_icon_styles'], true );
+					$settings['local_icon_styles'] = is_array( $decoded ) ? $decoded : array();
+				} elseif ( ! is_array( $settings['local_icon_styles'] ) ) {
+					$settings['local_icon_styles'] = array();
+				}
+			}
 
 			/**
 			 * Filter the Font Awesome settings.
@@ -873,7 +905,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			}
 
 			// Clear the cache.
-			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
 			$result     = $svg_loader->clear_icon_cache();
 
 			if ( is_wp_error( $result ) ) {
@@ -904,7 +936,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				wp_send_json_error( array( 'message' => __( 'No files uploaded.', 'font-awesome-settings' ) ) );
 			}
 
-			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
 			$custom_dir = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR;
 
 			// Ensure custom directory exists.
@@ -992,7 +1024,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				wp_send_json_error( array( 'message' => __( 'Invalid icon name.', 'font-awesome-settings' ) ) );
 			}
 
-			$svg_loader = AyeCode_Font_Awesome_SVG_Loader::instance();
+			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
 			$filepath   = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR . $name . '.svg';
 
 			// Check if file exists.
@@ -1097,19 +1129,9 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		$upload_dir = wp_upload_dir( null, false );
 
 		// Replace Font Awesome libraries with local versions if available.
+		// local_icon_styles is now normalized as an array in get_settings().
 		$local_icon_version = isset( $this->settings['local_icon_version'] ) ? $this->settings['local_icon_version'] : '';
 		$local_icon_styles  = isset( $this->settings['local_icon_styles'] ) ? $this->settings['local_icon_styles'] : array();
-
-		// Decode JSON if it's a string.
-		if ( is_string( $local_icon_styles ) && ! empty( $local_icon_styles ) ) {
-			$local_icon_styles = json_decode( $local_icon_styles, true );
-			if ( ! is_array( $local_icon_styles ) ) {
-				$local_icon_styles = array();
-			}
-		}
-
-//        print_r($local_icon_styles);exit;
-//        print_r($this->settings);exit;
 		if ( ! empty( $local_icon_version ) && ! empty( $local_icon_styles ) ) {
 			// If PRO is active, replace ALL Font Awesome files with our local ones.
 			if ( ! empty( absint( $this->settings['pro'] ) ) ) {
@@ -1124,8 +1146,9 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 
 				// Add our local PRO files (brands and pro).
-				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-brands.min.json';
-				$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-pro.min.json';
+				$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
+				$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'brands' );
+				$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'pro' );
 			} else {
 				// FREE: Track which styles exist in the incoming libraries.
 				$existing_styles = array();
@@ -1139,15 +1162,17 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 						// If we have this style generated locally, replace with local URL.
 						if ( in_array( $style, $local_icon_styles, true ) ) {
-							$libraries[ $key ] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-' . $style . '.min.json';
+							$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
+							$libraries[ $key ] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
 						}
 					}
 				}
 
 				// Add any local styles that don't exist in the incoming libraries.
+				$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
 				foreach ( $local_icon_styles as $style ) {
 					if ( ! in_array( $style, $existing_styles, true ) ) {
-						$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/font-awesome-' . $style . '.min.json';
+						$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
 					}
 				}
 			}
@@ -1155,7 +1180,8 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 		// Add custom icons if they exist.
 		if ( ayecode_get_custom_icon_count() > 0 ) {
-			$libraries[] = $upload_dir['baseurl'] . '/ayecode-icon-cache/icons-libraries/custom-icons.json';
+			$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
+			$libraries[] = $cache_url . AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME;
 		}
 
 //            print_r($local_icon_styles);
@@ -1172,27 +1198,15 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 }
 
 /**
- * Load SVG Loader class.
+ * Class aliases for backward compatibility.
+ * External code may still reference the old prefixed names.
  */
-if ( ! class_exists( 'AyeCode_Font_Awesome_SVG_Loader' ) ) {
-	require_once dirname( __FILE__ ) . '/src/SVG_Loader.php';
+if ( ! class_exists( 'AyeCode_FA_SVG_Loader' ) ) {
+	class_alias( 'AyeCode\FontAwesome\SVG_Loader', 'AyeCode_FA_SVG_Loader' );
 }
-
-/**
- * Load Custom Icons helper class.
- */
-if ( ! class_exists( 'WP_Font_Awesome_Custom_Icons' ) ) {
-	require_once dirname( __FILE__ ) . '/src/Custom_Icons.php';
+if ( ! class_exists( 'AyeCode_FA_Custom_Icons' ) ) {
+	class_alias( 'AyeCode\FontAwesome\Custom_Icons', 'AyeCode_FA_Custom_Icons' );
 }
-
-/**
- * Load Icon Library Generator class.
- */
-if ( ! class_exists( 'WP_Font_Awesome_Icon_Library_Generator' ) ) {
-	require_once dirname( __FILE__ ) . '/src/Icon_Library_Generator.php';
+if ( ! class_exists( 'AyeCode_FA_Icon_Library_Generator' ) ) {
+	class_alias( 'AyeCode\FontAwesome\Icon_Library_Generator', 'AyeCode_FA_Icon_Library_Generator' );
 }
-
-/**
- * Load global helper functions.
- */
-require_once dirname( __FILE__ ) . '/src/functions.php';

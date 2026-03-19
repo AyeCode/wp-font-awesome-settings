@@ -103,7 +103,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 		}
 
 		// Generate icon libraries.
-		$generator = WP_Font_Awesome_Icon_Library_Generator::instance();
+		$generator = \AyeCode\FontAwesome\Icon_Library_Generator::instance();
 		$result    = $generator->generate_icon_libraries( $new_settings );
 
 		// Handle result.
@@ -472,7 +472,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
         if ('get_icons' === $tool_action) {
 
             // Get custom icons using helper class
-            $custom_icons = WP_Font_Awesome_Custom_Icons::instance();
+            $custom_icons = \AyeCode\FontAwesome\Custom_Icons::instance();
             $icons = $custom_icons->get_all_icons();
 
             $response = [
@@ -493,7 +493,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             $optimize = ! empty( $data['optimize'] ); // Boolean
 
             // Upload icon using helper class
-            $custom_icons = WP_Font_Awesome_Custom_Icons::instance();
+            $custom_icons = \AyeCode\FontAwesome\Custom_Icons::instance();
 
             if ( $icon_type === 'code' ) {
                 // Code input mode
@@ -531,7 +531,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             }
 
             // Update icon using helper class
-            $custom_icons = WP_Font_Awesome_Custom_Icons::instance();
+            $custom_icons = \AyeCode\FontAwesome\Custom_Icons::instance();
             $result = $custom_icons->update_icon( $old_slug, $new_slug );
 
             // Handle errors
@@ -554,7 +554,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             }
 
             // Delete icon using helper class
-            $custom_icons = WP_Font_Awesome_Custom_Icons::instance();
+            $custom_icons = \AyeCode\FontAwesome\Custom_Icons::instance();
             $result = $custom_icons->delete_icon( $slug );
 
             // Handle errors
@@ -582,7 +582,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             }
 
             // Process bulk action
-            $custom_icons = WP_Font_Awesome_Custom_Icons::instance();
+            $custom_icons = \AyeCode\FontAwesome\Custom_Icons::instance();
             $success_count = 0;
             $error_count = 0;
             $errors = [];
