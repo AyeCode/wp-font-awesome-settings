@@ -136,21 +136,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 			$current_settings['local_icon_styles']  = is_array( $result ) ? wp_json_encode( $result ) : $result;
 			update_option( $this->option_name, $current_settings );
 
-			// Store success message.
-			$styles_count = count( $result );
-			set_transient(
-				'fa_icon_gen_success',
-				sprintf(
-					_n(
-						'Icon library updated successfully (%d style).',
-						'Icon libraries updated successfully (%d styles).',
-						$styles_count,
-						'font-awesome-settings'
-					),
-					$styles_count
-				),
-				60
-			);
+			// Success - no need to display a notice, errors will be shown via toast.
 		}
 	}
 
@@ -452,6 +438,24 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                     ],
                 ],
 
+                // Tools
+                [
+                    'id'    => 'tools',
+                    'name'  => __( 'Tools', 'ayecode-connect' ),
+                    'icon'  => 'fa-solid fa-screwdriver-wrench',
+                    'fields' => [
+                        [
+                            'id'           => 'tool_clear_icon_cache',
+                            'type'         => 'action_button',
+                            'label'        => __( 'Clear FA Icon Cache', 'ayecode-connect' ),
+                            'description'  => __( 'This will delete all downloaded Font Awesome SVG icons. They will auto download when used again. (does not delete custom icons)', 'ayecode-connect' ),
+                            'button_text'  => __( 'Clear Cache', 'ayecode-connect' ),
+                            'button_class' => 'btn-primary',
+                            'ajax_action'  => 'clear_icon_cache', // The unique ID for this action.
+                        ],
+                    ],
+                ],
+
 
 			],
 
@@ -628,6 +632,16 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                 }
             } else {
                 wp_send_json_error( [ 'message' => sprintf( __( 'Unknown bulk action: %s', 'font-awesome-settings' ), $action ) ] );
+            }
+        } elseif ( 'clear_icon_cache' === $tool_action ) {
+            // Clear the icon cache.
+            $svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
+            $result = $svg_loader->clear_icon_cache();
+
+            if ( \is_wp_error( $result ) ) {
+                wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+            } else {
+                wp_send_json_success( [ 'message' => __( 'Icon cache cleared successfully.', 'font-awesome-settings' ) ] );
             }
         }
 

@@ -456,22 +456,24 @@ class Icon_Library_Generator {
 		// For the generic "pro" category, use neutral FA classes without style prefix.
 		if ( 'pro' === $style_or_family ) {
 			$data = array(
-				'prefix'     => 'fa-solid fa-',
-				'icon-style' => 'fa-solid',
-				'list-icon'  => 'fa-solid fa-font-awesome',
-				'version'    => $version,
-				'modifiers'  => $has_modifiers,
-				'icons'      => array_values( array_unique( $icons ) ),
+				'schema_version' => AYECODE_FA_JSON_SCHEMA_VERSION,
+				'prefix'         => 'fa-solid fa-',
+				'icon-style'     => 'fa-solid',
+				'list-icon'      => 'fa-solid fa-font-awesome',
+				'version'        => $version,
+				'modifiers'      => $has_modifiers,
+				'icons'          => array_values( array_unique( $icons ) ),
 			);
 		} else {
 			// Prepare JSON data for specific styles (brands, solid, regular, etc.).
 			$data = array(
-				'prefix'     => 'fa-' . $style_or_family . ' fa-',
-				'icon-style' => 'fa-' . $style_or_family,
-				'list-icon'  => 'fa-' . $style_or_family . ' fa-font-awesome',
-				'version'    => $version,
-				'modifiers'  => $has_modifiers,
-				'icons'      => array_values( array_unique( $icons ) ),
+				'schema_version' => AYECODE_FA_JSON_SCHEMA_VERSION,
+				'prefix'         => 'fa-' . $style_or_family . ' fa-',
+				'icon-style'     => 'fa-' . $style_or_family,
+				'list-icon'      => 'fa-' . $style_or_family . ' fa-font-awesome',
+				'version'        => $version,
+				'modifiers'      => $has_modifiers,
+				'icons'          => array_values( array_unique( $icons ) ),
 			);
 		}
 

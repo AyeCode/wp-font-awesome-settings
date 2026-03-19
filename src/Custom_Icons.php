@@ -612,11 +612,12 @@ class Custom_Icons {
 
 		// Build JSON structure.
 		$json_data = [
-			'prefix'     => 'aui-icon-',
-			'icon-style' => 'custom',
-			'list-icon'  => 'aui-icon-custom',
-			'base-path'  => AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_CUSTOM_ICONS_DIR_NAME,
-			'icons'      => $icons_list,
+			'schema_version' => AYECODE_FA_JSON_SCHEMA_VERSION,
+			'prefix'         => 'aui-icon-',
+			'icon-style'     => 'custom',
+			'list-icon'      => 'aui-icon-custom',
+			'base-path'      => AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_CUSTOM_ICONS_DIR_NAME,
+			'icons'          => $icons_list,
 		];
 
 		// Encode JSON with pretty print.

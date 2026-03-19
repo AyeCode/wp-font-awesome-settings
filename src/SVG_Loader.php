@@ -969,9 +969,10 @@ class SVG_Loader {
 	}
 
 	/**
-	 * Clear all cached icons.
+	 * Clear cached Font Awesome icons.
 	 *
-	 * Recursively deletes all SVG files from the cache directory and flushes object cache.
+	 * Deletes cached Font Awesome SVG files and flushes object cache.
+	 * Preserves custom icons and icon library JSON files.
 	 * Note: This is a hard delete, not cache-busting via versioning.
 	 *
 	 * @return bool|WP_Error True on success, WP_Error on failure.
@@ -995,17 +996,25 @@ class SVG_Loader {
 			return new \WP_Error( 'filesystem_error', 'Failed to initialize WP_Filesystem.' );
 		}
 
-		// Delete the directory and all contents.
-		$result = $wp_filesystem->delete( $cache_dir, true );
+		// Define Font Awesome style folders to clear (preserves custom/ and icons-libraries/).
+		$fa_styles = array( 'solid', 'regular', 'brands', 'light', 'thin', 'duotone', 'sharp-solid', 'sharp-regular' );
 
-		if ( ! $result ) {
-			return new \WP_Error( 'delete_failed', 'Failed to delete icon cache directory.' );
+		$errors = array();
+		foreach ( $fa_styles as $style ) {
+			$style_dir = $cache_dir . $style;
+			if ( file_exists( $style_dir ) ) {
+				$result = $wp_filesystem->delete( $style_dir, true );
+				if ( ! $result ) {
+					$errors[] = $style;
+				}
+			}
 		}
 
-		// Recreate the directory.
-		wp_mkdir_p( $cache_dir );
+		if ( ! empty( $errors ) ) {
+			return new \WP_Error( 'delete_failed', sprintf( 'Failed to delete style folders: %s', implode( ', ', $errors ) ) );
+		}
 
-		// Flush object cache for this group.
+		// Flush object cache.
 		wp_cache_flush();
 
 		return true;

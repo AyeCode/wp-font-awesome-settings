@@ -37,6 +37,9 @@ if ( ! defined( 'AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME' ) ) {
 if ( ! defined( 'AYECODE_FA_JSON_FILENAME_PATTERN' ) ) {
 	define( 'AYECODE_FA_JSON_FILENAME_PATTERN', 'font-awesome-%s.min.json' );
 }
+if ( ! defined( 'AYECODE_FA_JSON_SCHEMA_VERSION' ) ) {
+	define( 'AYECODE_FA_JSON_SCHEMA_VERSION', '2.0' );
+}
 
 /**
  * Load composer autoloader for dependencies.
@@ -141,46 +144,10 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 */
 		public function constants(){
 
-			// register iconpicker constant
-			if ( ! defined( 'FAS_ICONPICKER_JS_URL' ) ) {
-				$url = $this->get_path_url();
-				$version = $this->settings['version'];
-
-				if( !$version || version_compare($version,'5.999','>')){
-					$url .= 'assets/js/fa-iconpicker-v6.min.js';
-				}else{
-					$url .= 'assets/js/fa-iconpicker-v5.min.js';
-				}
-
-				define( 'FAS_ICONPICKER_JS_URL', $url );
-
-			}
-
             // Set a constant if pro enabled
 			if ( ! defined( 'FAS_PRO' ) && $this->settings['pro'] ) {
 				define( 'FAS_PRO', true );
 			}
-		}
-
-		/**
-		 * Get the url path to the current folder.
-		 *
-		 * @return string
-		 */
-		public function get_path_url() {
-			$content_dir = wp_normalize_path( untrailingslashit( WP_CONTENT_DIR ) );
-			$content_url = untrailingslashit( WP_CONTENT_URL );
-
-			// Replace http:// to https://.
-			if ( strpos( $content_url, 'http://' ) === 0 && strpos( plugins_url(), 'https://' ) === 0 ) {
-				$content_url = str_replace( 'http://', 'https://', $content_url );
-			}
-
-			// Check if we are inside a plugin
-			$file_dir = str_replace( "/includes", "", wp_normalize_path( dirname( __FILE__ ) ) );
-			$url = str_replace( $content_dir, $content_url, $file_dir );
-
-			return trailingslashit( $url );
 		}
 
 		/**
@@ -194,9 +161,6 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		if ( is_admin() && ! $this->settings_framework ) {
 			require_once dirname( __FILE__ ) . '/src/Settings.php';
 			$this->settings_framework = new WP_Font_Awesome_Settings_Framework( $this );
-
-			// Register AJAX handlers for SVG loader.
-			add_action( 'wp_ajax_ayecode_fa_clear_cache', array( $this, 'ajax_clear_svg_cache' ) );
 		}
 
 		// Register custom icons library for iconpicker.
@@ -581,7 +545,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		public function admin_notices() {
 			$settings = $this->settings;
 
-			// Check for icon generation success/error messages.
+			// Check for icon generation error messages (errors only - success handled by toast).
 			$icon_gen_error = get_transient( 'fa_icon_gen_error' );
 			if ( $icon_gen_error ) {
 				?>
@@ -590,16 +554,6 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				</div>
 				<?php
 				delete_transient( 'fa_icon_gen_error' );
-			}
-
-			$icon_gen_success = get_transient( 'fa_icon_gen_success' );
-			if ( $icon_gen_success ) {
-				?>
-				<div class="notice notice-success is-dismissible">
-					<p><?php echo esc_html( $icon_gen_success ); ?></p>
-				</div>
-				<?php
-				delete_transient( 'fa_icon_gen_success' );
 			}
 
 			if ( defined( 'FONTAWESOME_PLUGIN_FILE' ) ) {
@@ -888,191 +842,6 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			return $return;
 		}
 
-		/**
-		 * AJAX handler to clear SVG icon cache.
-		 *
-		 * @since 2.0.0
-		 */
-		public function ajax_clear_svg_cache() {
-			// Verify nonce.
-			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_clear_cache' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
-			}
-
-			// Check user capabilities.
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
-			}
-
-			// Clear the cache.
-			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
-			$result     = $svg_loader->clear_icon_cache();
-
-			if ( is_wp_error( $result ) ) {
-				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
-			}
-
-			wp_send_json_success( array( 'message' => __( 'Icon cache cleared successfully.', 'font-awesome-settings' ) ) );
-		}
-
-		/**
-		 * AJAX handler to upload custom SVG icons.
-		 *
-		 * @since 2.0.0
-		 */
-		public function ajax_upload_custom_svg() {
-			// Verify nonce.
-			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_upload_svg' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
-			}
-
-			// Check user capabilities.
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
-			}
-
-			// Check if files were uploaded.
-			if ( empty( $_FILES['svg_files'] ) ) {
-				wp_send_json_error( array( 'message' => __( 'No files uploaded.', 'font-awesome-settings' ) ) );
-			}
-
-			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
-			$custom_dir = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR;
-
-			// Ensure custom directory exists.
-			if ( ! file_exists( $custom_dir ) ) {
-				wp_mkdir_p( $custom_dir );
-			}
-
-			$files          = $_FILES['svg_files'];
-			$uploaded_count = 0;
-			$errors         = array();
-
-			// Handle multiple files.
-			if ( is_array( $files['name'] ) ) {
-				foreach ( $files['name'] as $key => $filename ) {
-					// Validate file extension.
-					$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
-					if ( 'svg' !== $ext ) {
-						$errors[] = sprintf( __( '%s is not an SVG file.', 'font-awesome-settings' ), $filename );
-						continue;
-					}
-
-					// Sanitize filename.
-					$filename = sanitize_file_name( $filename );
-					$filepath = $custom_dir . $filename;
-
-					// Read file content.
-					$svg_content = file_get_contents( $files['tmp_name'][ $key ] );
-
-					// Basic SVG validation - check if it contains <svg> tag.
-					if ( false === strpos( $svg_content, '<svg' ) ) {
-						$errors[] = sprintf( __( '%s does not appear to be a valid SVG file.', 'font-awesome-settings' ), $filename );
-						continue;
-					}
-
-					// Sanitize SVG content using our sanitization method.
-					$svg_content = $this->sanitize_uploaded_svg( $svg_content );
-
-					// Save file.
-					$result = file_put_contents( $filepath, $svg_content );
-
-					if ( false === $result ) {
-						$errors[] = sprintf( __( 'Failed to save %s.', 'font-awesome-settings' ), $filename );
-						continue;
-					}
-
-					$uploaded_count++;
-				}
-			}
-
-			if ( $uploaded_count > 0 ) {
-				$message = sprintf(
-					_n( '%d icon uploaded successfully.', '%d icons uploaded successfully.', $uploaded_count, 'font-awesome-settings' ),
-					$uploaded_count
-				);
-
-				if ( ! empty( $errors ) ) {
-					$message .= ' ' . __( 'Some files had errors:', 'font-awesome-settings' ) . ' ' . implode( ' ', $errors );
-				}
-
-				wp_send_json_success( array( 'message' => $message ) );
-			} else {
-				wp_send_json_error( array( 'message' => __( 'Upload failed: ', 'font-awesome-settings' ) . implode( ' ', $errors ) ) );
-			}
-		}
-
-		/**
-		 * AJAX handler to delete custom SVG icon.
-		 *
-		 * @since 2.0.0
-		 */
-		public function ajax_delete_custom_svg() {
-			// Verify nonce.
-			if ( ! isset( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'ayecode_fa_delete_svg' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Security check failed.', 'font-awesome-settings' ) ) );
-			}
-
-			// Check user capabilities.
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( array( 'message' => __( 'Insufficient permissions.', 'font-awesome-settings' ) ) );
-			}
-
-			// Get icon name.
-			$name = isset( $_POST['name'] ) ? sanitize_file_name( $_POST['name'] ) : '';
-			if ( empty( $name ) ) {
-				wp_send_json_error( array( 'message' => __( 'Invalid icon name.', 'font-awesome-settings' ) ) );
-			}
-
-			$svg_loader = \AyeCode\FontAwesome\SVG_Loader::instance();
-			$filepath   = $svg_loader->get_icon_cache_dir() . 'custom' . DIRECTORY_SEPARATOR . $name . '.svg';
-
-			// Check if file exists.
-			if ( ! file_exists( $filepath ) ) {
-				wp_send_json_error( array( 'message' => __( 'Icon file not found.', 'font-awesome-settings' ) ) );
-			}
-
-			// Delete the file.
-			$result = unlink( $filepath );
-
-			if ( ! $result ) {
-				wp_send_json_error( array( 'message' => __( 'Failed to delete icon.', 'font-awesome-settings' ) ) );
-			}
-
-			// Clear object cache for this icon.
-			wp_cache_delete( 'ayecode_icon_custom_' . $name, 'ayecode_icons' );
-
-			wp_send_json_success( array( 'message' => __( 'Icon deleted successfully.', 'font-awesome-settings' ) ) );
-		}
-
-		/**
-		 * Sanitize uploaded SVG content.
-		 *
-		 * Applies same sanitization as SVG_Loader but without ID normalization.
-		 *
-		 * @param string $svg SVG content.
-		 *
-		 * @return string Sanitized SVG.
-		 * @since 2.0.0
-		 */
-		private function sanitize_uploaded_svg( string $svg ): string {
-		// Use enshrined/svg-sanitize library for secure sanitization
-		$sanitizer = new \enshrined\svgSanitize\Sanitizer();
-		$sanitizer->removeRemoteReferences( true );
-
-		$sanitized_svg = $sanitizer->sanitize( $svg );
-
-		// Return empty string if sanitization fails (fallback)
-		if ( false === $sanitized_svg || empty( $sanitized_svg ) ) {
-			return '';
-		}
-
-		return $sanitized_svg;
-		}
-
-		/**
-		 * Output the version in the header.
-		 */
 		public function add_generator() {
 			$file = str_replace( array( "/", "\\" ), "/", realpath( __FILE__ ) );
 			$plugins_dir = str_replace( array( "/", "\\" ), "/", realpath( WP_PLUGIN_DIR ) );
