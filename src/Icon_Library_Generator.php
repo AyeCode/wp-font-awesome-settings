@@ -110,7 +110,7 @@ class Icon_Library_Generator {
 		if ( \is_wp_error( $response ) ) {
 			return new \WP_Error(
 				'fa_fetch_failed',
-				sprintf( __( 'Failed to fetch icons from GitHub: %s', 'font-awesome-settings' ), $response->get_error_message() )
+				sprintf( __( 'Failed to fetch icons from GitHub: %s', 'ayecode-connect' ), $response->get_error_message() )
 			);
 		}
 
@@ -118,13 +118,13 @@ class Icon_Library_Generator {
 		if ( 200 !== $status_code ) {
 			return new \WP_Error(
 				'fa_fetch_failed',
-				sprintf( __( 'GitHub returned status code %d for URL: %s', 'font-awesome-settings' ), $status_code, $url )
+				sprintf( __( 'GitHub returned status code %d for URL: %s', 'ayecode-connect' ), $status_code, $url )
 			);
 		}
 
 		$yml_content = wp_remote_retrieve_body( $response );
 		if ( empty( $yml_content ) ) {
-			return new \WP_Error( 'fa_empty_response', __( 'Empty response from GitHub', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_empty_response', __( 'Empty response from GitHub', 'ayecode-connect' ) );
 		}
 
 		// Parse YAML.
@@ -146,12 +146,12 @@ class Icon_Library_Generator {
 		} catch ( Exception $e ) {
 			return new \WP_Error(
 				'fa_parse_failed',
-				sprintf( __( 'Failed to parse YAML: %s', 'font-awesome-settings' ), $e->getMessage() )
+				sprintf( __( 'Failed to parse YAML: %s', 'ayecode-connect' ), $e->getMessage() )
 			);
 		}
 
 		if ( empty( $data ) || ! is_array( $data ) ) {
-			return new \WP_Error( 'fa_invalid_yaml', __( 'Invalid YAML data', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_invalid_yaml', __( 'Invalid YAML data', 'ayecode-connect' ) );
 		}
 
 		// Convert YAML structure to our format.
@@ -220,7 +220,7 @@ class Icon_Library_Generator {
 		if ( \is_wp_error( $response ) ) {
 			return new \WP_Error(
 				'fa_api_failed',
-				sprintf( __( 'Failed to fetch icons from Font Awesome API: %s', 'font-awesome-settings' ), $response->get_error_message() )
+				sprintf( __( 'Failed to fetch icons from Font Awesome API: %s', 'ayecode-connect' ), $response->get_error_message() )
 			);
 		}
 
@@ -228,7 +228,7 @@ class Icon_Library_Generator {
 		if ( 200 !== $status_code ) {
 			return new \WP_Error(
 				'fa_api_failed',
-				sprintf( __( 'Font Awesome API returned status code %d', 'font-awesome-settings' ), $status_code )
+				sprintf( __( 'Font Awesome API returned status code %d', 'ayecode-connect' ), $status_code )
 			);
 		}
 
@@ -236,7 +236,7 @@ class Icon_Library_Generator {
 		$data = json_decode( $body, true );
 
 		if ( empty( $data['data']['release']['icons'] ) ) {
-			return new \WP_Error( 'fa_invalid_api_response', __( 'Invalid API response structure', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_invalid_api_response', __( 'Invalid API response structure', 'ayecode-connect' ) );
 		}
 
 		// Transform GraphQL response to our format (without search terms for now).
@@ -283,7 +283,7 @@ class Icon_Library_Generator {
 		if ( \is_wp_error( $response ) ) {
 			return new \WP_Error(
 				'fa_auth_failed',
-				sprintf( __( 'Failed to authenticate with Font Awesome API: %s', 'font-awesome-settings' ), $response->get_error_message() )
+				sprintf( __( 'Failed to authenticate with Font Awesome API: %s', 'ayecode-connect' ), $response->get_error_message() )
 			);
 		}
 
@@ -291,7 +291,7 @@ class Icon_Library_Generator {
 		if ( 200 !== $status_code ) {
 			return new \WP_Error(
 				'fa_auth_failed',
-				sprintf( __( 'Font Awesome API authentication returned status code %d', 'font-awesome-settings' ), $status_code )
+				sprintf( __( 'Font Awesome API authentication returned status code %d', 'ayecode-connect' ), $status_code )
 			);
 		}
 
@@ -299,7 +299,7 @@ class Icon_Library_Generator {
 		$data = json_decode( $body, true );
 
 		if ( empty( $data['access_token'] ) ) {
-			return new \WP_Error( 'fa_auth_failed', __( 'Invalid API key or authentication failed', 'font-awesome-settings' ) );
+			return new \WP_Error( 'fa_auth_failed', __( 'Invalid API key or authentication failed', 'ayecode-connect' ) );
 		}
 
 		$token = $data['access_token'];
@@ -483,7 +483,7 @@ class Icon_Library_Generator {
 		if ( false === $json_content ) {
 			return new \WP_Error(
 				'fa_json_encode_failed',
-				sprintf( __( 'Failed to encode JSON for style: %s', 'font-awesome-settings' ), $style )
+				sprintf( __( 'Failed to encode JSON for style: %s', 'ayecode-connect' ), $style )
 			);
 		}
 
@@ -503,7 +503,7 @@ class Icon_Library_Generator {
 		if ( false === $result ) {
 			return new \WP_Error(
 				'fa_file_write_failed',
-				sprintf( __( 'Failed to write JSON file: %s', 'font-awesome-settings' ), $filepath )
+				sprintf( __( 'Failed to write JSON file: %s', 'ayecode-connect' ), $filepath )
 			);
 		}
 
@@ -538,7 +538,7 @@ class Icon_Library_Generator {
 			if ( file_exists( $filepath ) ) {
 				$result = wp_delete_file( $filepath );
 				if ( false === $result ) {
-					$errors[] = sprintf( __( 'Failed to delete file: %s', 'font-awesome-settings' ), $filename );
+					$errors[] = sprintf( __( 'Failed to delete file: %s', 'ayecode-connect' ), $filename );
 				}
 			}
 		}

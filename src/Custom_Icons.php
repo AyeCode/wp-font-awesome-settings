@@ -237,12 +237,12 @@ class Custom_Icons {
 
 			// Check code size (limit to 5MB equivalent)
 			if ( strlen( $svg_content ) > 5 * 1024 * 1024 ) {
-				return new \WP_Error( 'code_too_large', __( 'SVG code exceeds 5MB limit.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'code_too_large', __( 'SVG code exceeds 5MB limit.', 'ayecode-connect' ) );
 			}
 
 			// Slug is required for code input
 			if ( empty( $slug ) ) {
-				return new \WP_Error( 'slug_required', __( 'Icon identifier is required for code input.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'slug_required', __( 'Icon identifier is required for code input.', 'ayecode-connect' ) );
 			}
 
 		} else {
@@ -251,18 +251,18 @@ class Custom_Icons {
 
 			// Validate file array.
 			if ( empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
-				return new \WP_Error( 'invalid_file', __( 'Invalid file upload.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'invalid_file', __( 'Invalid file upload.', 'ayecode-connect' ) );
 			}
 
 			// Check file size (limit to 5MB).
 			if ( $file['size'] > 5 * 1024 * 1024 ) {
-				return new \WP_Error( 'file_too_large', __( 'File size exceeds 5MB limit.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'file_too_large', __( 'File size exceeds 5MB limit.', 'ayecode-connect' ) );
 			}
 
 			// Validate file extension.
 			$ext = strtolower( pathinfo( $file['name'], PATHINFO_EXTENSION ) );
 			if ( 'svg' !== $ext ) {
-				return new \WP_Error( 'invalid_extension', __( 'File must be an SVG.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'invalid_extension', __( 'File must be an SVG.', 'ayecode-connect' ) );
 			}
 
 			// Determine slug.
@@ -274,7 +274,7 @@ class Custom_Icons {
 			$svg_content = file_get_contents( $file['tmp_name'] );
 
 			if ( false === $svg_content ) {
-				return new \WP_Error( 'read_error', __( 'Failed to read uploaded file.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'read_error', __( 'Failed to read uploaded file.', 'ayecode-connect' ) );
 			}
 		}
 
@@ -283,17 +283,17 @@ class Custom_Icons {
 
 		// Validate slug is not empty after sanitization.
 		if ( empty( $slug ) ) {
-			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'ayecode-connect' ) );
 		}
 
 		// Check if slug already exists.
 		if ( $this->icon_exists( $slug ) ) {
-			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $slug ) );
+			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'ayecode-connect' ), $slug ) );
 		}
 
 		// Basic SVG validation - check if it contains <svg> tag.
 		if ( false === strpos( $svg_content, '<svg' ) ) {
-			return new \WP_Error( 'invalid_svg', __( 'Content does not appear to be a valid SVG.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_svg', __( 'Content does not appear to be a valid SVG.', 'ayecode-connect' ) );
 		}
 
 		// Optimize SVG if requested (only for initial add, not updates).
@@ -313,7 +313,7 @@ class Custom_Icons {
 		$custom_dir = $this->get_custom_icons_dir();
 		if ( ! file_exists( $custom_dir ) ) {
 			if ( ! wp_mkdir_p( $custom_dir ) ) {
-				return new \WP_Error( 'directory_error', __( 'Failed to create custom icons directory.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'directory_error', __( 'Failed to create custom icons directory.', 'ayecode-connect' ) );
 			}
 
 			// Create index.php for security (prevent directory listing)
@@ -329,13 +329,13 @@ class Custom_Icons {
 		$real_filepath   = realpath( dirname( $filepath ) );
 
 		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
-			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'ayecode-connect' ) );
 		}
 
 		$result = file_put_contents( $filepath, $svg_content );
 
 		if ( false === $result ) {
-			return new \WP_Error( 'save_error', __( 'Failed to save icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'save_error', __( 'Failed to save icon file.', 'ayecode-connect' ) );
 		}
 
 		// Generate JSON file.
@@ -362,12 +362,12 @@ class Custom_Icons {
 
 		// Validate slugs.
 		if ( empty( $old_slug ) || empty( $new_slug ) ) {
-			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_slug', __( 'Invalid icon identifier.', 'ayecode-connect' ) );
 		}
 
 		// Check if old icon exists.
 		if ( ! $this->icon_exists( $old_slug ) ) {
-			return new \WP_Error( 'not_found', sprintf( __( 'Icon "%s" not found.', 'font-awesome-settings' ), $old_slug ) );
+			return new \WP_Error( 'not_found', sprintf( __( 'Icon "%s" not found.', 'ayecode-connect' ), $old_slug ) );
 		}
 
 		// If slug hasn't changed, just return the icon.
@@ -377,7 +377,7 @@ class Custom_Icons {
 
 		// Check if new slug already exists.
 		if ( $this->icon_exists( $new_slug ) ) {
-			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'font-awesome-settings' ), $new_slug ) );
+			return new \WP_Error( 'slug_exists', sprintf( __( 'Icon with identifier "%s" already exists.', 'ayecode-connect' ), $new_slug ) );
 		}
 
 		// Get file paths.
@@ -391,19 +391,19 @@ class Custom_Icons {
 		$real_new_dir     = realpath( dirname( $new_filepath ) );
 
 		if ( false === $real_custom_dir || false === $real_old_dir || 0 !== strpos( $real_old_dir, $real_custom_dir ) ) {
-			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'ayecode-connect' ) );
 		}
 
 		// New file directory check (dirname might not exist yet)
 		if ( false !== $real_new_dir && 0 !== strpos( $real_new_dir, $real_custom_dir ) ) {
-			return new \WP_Error( 'invalid_path', __( 'Invalid destination path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid destination path detected.', 'ayecode-connect' ) );
 		}
 
 		// Rename the file.
 		$result = rename( $old_filepath, $new_filepath );
 
 		if ( ! $result ) {
-			return new \WP_Error( 'rename_error', __( 'Failed to rename icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'rename_error', __( 'Failed to rename icon file.', 'ayecode-connect' ) );
 		}
 
 		// Clear object cache for old slug.
@@ -432,7 +432,7 @@ class Custom_Icons {
 
 		// Check if file exists.
 		if ( ! file_exists( $filepath ) || ! is_file( $filepath ) ) {
-			return new \WP_Error( 'not_found', __( 'Icon file not found.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'not_found', __( 'Icon file not found.', 'ayecode-connect' ) );
 		}
 
 		// Verify path is within custom directory (prevent directory traversal)
@@ -440,14 +440,14 @@ class Custom_Icons {
 		$real_filepath   = realpath( $filepath );
 
 		if ( false === $real_custom_dir || false === $real_filepath || 0 !== strpos( $real_filepath, $real_custom_dir ) ) {
-			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'invalid_path', __( 'Invalid file path detected.', 'ayecode-connect' ) );
 		}
 
 		// Delete the file.
 		$result = unlink( $filepath );
 
 		if ( ! $result ) {
-			return new \WP_Error( 'delete_error', __( 'Failed to delete icon file.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'delete_error', __( 'Failed to delete icon file.', 'ayecode-connect' ) );
 		}
 
 		// Clear object cache for this icon.
@@ -479,7 +479,7 @@ class Custom_Icons {
 		$sanitized_svg = $sanitizer->sanitize( $svg );
 
 		if ( false === $sanitized_svg || empty( $sanitized_svg ) ) {
-			return new \WP_Error( 'svg_sanitization_failed', __( 'Failed to sanitize SVG content. The SVG may contain malicious code.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'svg_sanitization_failed', __( 'Failed to sanitize SVG content. The SVG may contain malicious code.', 'ayecode-connect' ) );
 		}
 
 		return $sanitized_svg;
@@ -590,7 +590,7 @@ class Custom_Icons {
 		// Ensure directory exists.
 		if ( ! file_exists( $libraries_dir ) ) {
 			if ( ! wp_mkdir_p( $libraries_dir ) ) {
-				return new \WP_Error( 'directory_error', __( 'Failed to create icons-libraries directory.', 'font-awesome-settings' ) );
+				return new \WP_Error( 'directory_error', __( 'Failed to create icons-libraries directory.', 'ayecode-connect' ) );
 			}
 			// Add index.php protection to cache and libraries directories.
 			$cache_dir = dirname( $libraries_dir );
@@ -624,7 +624,7 @@ class Custom_Icons {
 		$json_content = wp_json_encode( $json_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES );
 
 		if ( false === $json_content ) {
-			return new \WP_Error( 'json_encode_error', __( 'Failed to encode JSON data.', 'font-awesome-settings' ) );
+			return new \WP_Error( 'json_encode_error', __( 'Failed to encode JSON data.', 'ayecode-connect' ) );
 		}
 
 		// Write JSON file.
@@ -632,7 +632,7 @@ class Custom_Icons {
 		$result = file_put_contents( $json_filepath, $json_content );
 
 		if ( false === $result ) {
-			return new \WP_Error( 'file_write_error', sprintf( __( 'Failed to write %s file.', 'font-awesome-settings' ), AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME ) );
+			return new \WP_Error( 'file_write_error', sprintf( __( 'Failed to write %s file.', 'ayecode-connect' ), AYECODE_FA_CUSTOM_ICONS_JSON_FILENAME ) );
 		}
 
 		return true;

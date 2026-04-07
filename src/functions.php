@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - Type = SVG: Outputs inline SVG markup with JIT loading and caching (frontend only)
  * - Type = CSS/JS/KIT: Outputs <i> tag for webfont/JavaScript rendering
  * - Custom icons: Always outputs inline SVG regardless of Type setting
+ * - force_svg option: Forces SVG output regardless of Type setting
  *
  * Note: This function is intended for frontend use only. The backend loads Font Awesome CSS
  * normally and uses standard <i> tags regardless of the Type setting.
@@ -31,10 +32,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  *       'aria_label' => 'User Profile',
  *       'width' => '24',
  *       'height' => '24',
+ *       'force_svg' => true, // Force SVG output regardless of Type setting
  *   ) );
  *
  * @param string $identifier Icon identifier (e.g., 'fa-solid fa-user' or 'aui-icon-logo').
- * @param array  $options    Optional. Rendering options including class, aria_label, width, height, fill, attributes.
+ * @param array  $options    Optional. Rendering options including class, aria_label, width, height, fill, attributes, force_svg.
  *
  * @return string Icon markup (SVG or <i> tag) or empty string on failure.
  */
@@ -50,7 +52,8 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
 
     // Custom icons ALWAYS render as SVG regardless of Type setting
     $is_custom = ( $parsed['type'] === 'custom' );
-    $use_svg = ( isset( $settings['type'] ) && $settings['type'] === 'SVG' ) || $is_custom;
+    $force_svg = ! empty( $options['force_svg'] );
+    $use_svg = ( isset( $settings['type'] ) && $settings['type'] === 'SVG' ) || $is_custom || $force_svg;
 
     // If type is SVG or custom icon, render inline SVG
     if ( $use_svg ) {
@@ -123,7 +126,26 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
     return '<i' . $attr_string . '></i>';
 }
 
-
+/**
+ * Echo Font Awesome icon markup.
+ *
+ * Convenience function that echoes icon markup instead of returning it.
+ * Follows WordPress convention of get_*() vs the_*() functions.
+ *
+ * Usage:
+ *   ayecode_icon( 'fa-solid fa-user', array(
+ *       'class' => 'my-icon',
+ *       'aria_label' => 'User Profile',
+ *   ) );
+ *
+ * @param string $identifier Icon identifier (e.g., 'fa-solid fa-user' or 'aui-icon-logo').
+ * @param array  $options    Optional. Rendering options including class, aria_label, width, height, fill, attributes, force_svg.
+ *
+ * @return void
+ */
+function ayecode_icon( string $identifier, array $options = array() ): void {
+	echo ayecode_get_icon( $identifier, $options );
+}
 
 /**
  * Get all custom icons.

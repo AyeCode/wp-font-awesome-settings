@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin Constants - Can be overridden in mu-plugins
  */
 if ( ! defined( 'AYECODE_FA_DEFAULT_VERSION' ) ) {
-	define( 'AYECODE_FA_DEFAULT_VERSION', '6.7.2' );
+	define( 'AYECODE_FA_DEFAULT_VERSION', '7.2.0' );
 }
 if ( ! defined( 'AYECODE_FA_CACHE_DIR_NAME' ) ) {
 	define( 'AYECODE_FA_CACHE_DIR_NAME', 'ayecode-icon-cache' );
@@ -72,14 +72,14 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $textdomain = 'font-awesome-settings';
+		public $textdomain = 'ayecode-connect';
 
 		/**
 		 * Latest version of Font Awesome at time of publish published.
 		 *
 		 * @var string
 		 */
-		public $latest = "6.4.2";
+		public $latest = AYECODE_FA_DEFAULT_VERSION;
 
 		/**
 		 * The title.
@@ -124,12 +124,15 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			if ( ! isset( self::$instance ) && ! ( self::$instance instanceof WP_Font_Awesome_Settings ) ) {
 				self::$instance = new WP_Font_Awesome_Settings;
 
-				add_action( 'init', array( self::$instance, 'init' ) ); // set settings
+				add_action( 'init', array( self::$instance, 'init' ), 4 ); // set settings
 
 				if ( is_admin() ) {
 					add_action( 'admin_init', array( self::$instance, 'constants' ) );
 					add_action( 'admin_notices', array( self::$instance, 'admin_notices' ) );
 				}
+
+				// Register REST API endpoint for Font Awesome Pro search.
+				add_action( 'rest_api_init', array( self::$instance, 'register_rest_api' ) );
 
 				do_action( 'wp_font_awesome_settings_loaded' );
 			}
@@ -491,10 +494,6 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 				}
 			}
 
-			// @todo remove after FA7 compatibility
-			if ( ! $force_latest && version_compare( $cache, '7.0.0', '>=' ) >= 0 ) {
-				$latest_version = '6.7.2';
-			}
 
 			// Check and auto download fonts locally.
 			if ( empty( $this->settings['pro'] ) && empty( $this->settings['version'] ) && $this->settings['type'] != 'KIT' && ! empty( $this->settings['local'] ) && ! empty( $this->settings['local_version'] ) && ! empty( $latest_version ) ) {
@@ -550,7 +549,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 			if ( $icon_gen_error ) {
 				?>
 				<div class="notice notice-error is-dismissible">
-					<p><?php echo esc_html( sprintf( __( 'Font Awesome Icon Library Generation Error: %s', 'font-awesome-settings' ), $icon_gen_error ) ); ?></p>
+					<p><?php echo esc_html( sprintf( __( 'Font Awesome Icon Library Generation Error: %s', 'ayecode-connect' ), $icon_gen_error ) ); ?></p>
 				</div>
 				<?php
 				delete_transient( 'fa_icon_gen_error' );
@@ -896,54 +895,27 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 */
 	public function register_custom_icons_library( $libraries ) {
 		$upload_dir = wp_upload_dir( null, false );
+		$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
 
-		// Replace Font Awesome libraries with local versions if available.
+		// Get local icon settings.
 		// local_icon_styles is now normalized as an array in get_settings().
 		$local_icon_version = isset( $this->settings['local_icon_version'] ) ? $this->settings['local_icon_version'] : '';
 		$local_icon_styles  = isset( $this->settings['local_icon_styles'] ) ? $this->settings['local_icon_styles'] : array();
-		if ( ! empty( $local_icon_version ) && ! empty( $local_icon_styles ) ) {
-			// If PRO is active, replace ALL Font Awesome files with our local ones.
-			if ( ! empty( absint( $this->settings['pro'] ) ) ) {
-				// Remove all Font Awesome libraries.
-				foreach ( $libraries as $key => $library_url ) {
-					if ( preg_match( '/font-awesome-[a-z\-]+\.min\.json$/', $library_url ) ) {
-						unset( $libraries[ $key ] );
-					}
-				}
-				// Reindex array to prevent it from being converted to an object.
-				$libraries = array_values( $libraries );
 
-
-				// Add our local PRO files (brands and pro).
-				$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
-				$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'brands' );
-				$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'pro' );
-			} else {
-				// FREE: Track which styles exist in the incoming libraries.
-				$existing_styles = array();
-
-				// Loop through libraries and replace matching Font Awesome files.
-				foreach ( $libraries as $key => $library_url ) {
-					// Check if this is a Font Awesome library URL.
-					if ( preg_match( '/font-awesome-(solid|regular|brands)\.min\.json$/', $library_url, $matches ) ) {
-						$style = $matches[1];
-						$existing_styles[] = $style;
-
-						// If we have this style generated locally, replace with local URL.
-						if ( in_array( $style, $local_icon_styles, true ) ) {
-							$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
-							$libraries[ $key ] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
-						}
-					}
-				}
-
-				// Add any local styles that don't exist in the incoming libraries.
-				$cache_url = $upload_dir['baseurl'] . '/' . AYECODE_FA_CACHE_DIR_NAME . '/' . AYECODE_FA_LIBRARIES_DIR_NAME . '/';
-				foreach ( $local_icon_styles as $style ) {
-					if ( ! in_array( $style, $existing_styles, true ) ) {
-						$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
-					}
-				}
+		// If no cached files have been saved, use bundled assets as fallback.
+        if ( empty( $local_icon_version ) || empty( $local_icon_styles ) ) {
+			$plugin_url = plugin_dir_url( __FILE__ );
+			$libraries[] = $plugin_url . 'assets/icons-libraries/font-awesome-solid.min.json';
+			$libraries[] = $plugin_url . 'assets/icons-libraries/font-awesome-regular.min.json';
+			$libraries[] = $plugin_url . 'assets/icons-libraries/font-awesome-brands.min.json';
+		} elseif ( ! empty( absint( $this->settings['pro'] ) ) ) {
+			// PRO: Add brands and pro.
+			$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'brands' );
+			$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, 'pro' );
+		} else {
+			// FREE: Add selected styles.
+			foreach ( $local_icon_styles as $style ) {
+				$libraries[] = $cache_url . sprintf( AYECODE_FA_JSON_FILENAME_PATTERN, $style );
 			}
 		}
 
@@ -958,13 +930,154 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 
 		return $libraries;
 	}
+
+	/**
+	 * Register REST API endpoints.
+	 */
+	public function register_rest_api() {
+		register_rest_route(
+			'ayecode/fontawesome/v1',
+			'/search',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( $this, 'rest_fa_search' ),
+				'permission_callback' => array( $this, 'rest_permission_check' ),
+				'args'                => array(
+					'style'  => array(
+						'required'          => false,
+						'default'           => '',
+						'validate_callback' => function( $param ) {
+							return empty( $param ) || in_array( $param, array( 'classic', 'duotone', 'sharp', 'sharp-duotone', 'brands' ) );
+						},
+					),
+					'weight' => array(
+						'required'          => false,
+						'default'           => '',
+						'validate_callback' => function( $param ) {
+							// Weight is not used for brands style.
+							return empty( $param ) || in_array( $param, array( 'solid', 'regular', 'light', 'thin' ) );
+						},
+					),
+					'search' => array(
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
 	}
+
+	/**
+	 * Permission check for REST API - requires admin capabilities.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return bool|WP_Error True if user has permission.
+	 */
+	public function rest_permission_check( $request ) {
+		// Check if user is logged in and has admin capabilities.
+		if ( ! is_user_logged_in() ) {
+			return new \WP_Error( 'rest_forbidden', __( 'You must be logged in to access this endpoint.', 'ayecode-connect' ), array( 'status' => 401 ) );
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to access this endpoint.', 'ayecode-connect' ), array( 'status' => 403 ) );
+		}
+
+		// Verify nonce for cookie authentication.
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce ) {
+			$nonce = $request->get_param( '_wpnonce' );
+		}
+
+		if ( $nonce && ! wp_verify_nonce( $nonce, 'wp_rest' ) ) {
+			return new \WP_Error( 'rest_cookie_invalid_nonce', __( 'Cookie nonce is invalid.', 'ayecode-connect' ), array( 'status' => 403 ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * REST API handler for Font Awesome Pro icon search.
+	 *
+	 * @param WP_REST_Request $request Request object.
+	 * @return WP_REST_Response|WP_Error Response object or error.
+	 */
+	public function rest_fa_search( $request ) {
+		$style  = $request->get_param( 'style' );
+		$weight = $request->get_param( 'weight' );
+		$search = $request->get_param( 'search' );
+
+		// Check if Pro is enabled.
+		if ( empty( $this->settings['pro'] ) ) {
+			return new \WP_Error( 'pro_not_enabled', __( 'Font Awesome Pro is not enabled', 'ayecode-connect' ), array( 'status' => 403 ) );
+		}
+
+		// Get API key.
+		$api_key = ! empty( $this->settings['api_key'] ) ? $this->settings['api_key'] : '';
+		if ( empty( $api_key ) ) {
+			return new \WP_Error( 'no_api_key', __( 'Font Awesome API key is not configured', 'ayecode-connect' ), array( 'status' => 500 ) );
+		}
+
+		// Get version.
+		$version = ! empty( $this->settings['version'] ) ? $this->settings['version'] : AYECODE_FA_DEFAULT_VERSION;
+
+		// Get auth token.
+		$icon_gen   = \AyeCode\FontAwesome\Icon_Library_Generator::instance();
+		$auth_token = $icon_gen->get_auth_token( $api_key );
+
+		if ( \is_wp_error( $auth_token ) ) {
+			return new \WP_Error( 'auth_failed', $auth_token->get_error_message(), array( 'status' => 401 ) );
+		}
+
+		// Build GraphQL query for icon search.
+		$query = sprintf(
+			'query { search(version: "%s", query: "%s") { id } }',
+			esc_attr( $version ),
+			esc_attr( $search )
+		);
+
+		// Make API request.
+		$response = wp_remote_post(
+			'https://api.fontawesome.com/graphql',
+			array(
+				'timeout' => 15,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $auth_token,
+					'Content-Type'  => 'application/json',
+				),
+				'body'    => wp_json_encode( array( 'query' => $query ) ),
+			)
+		);
+
+		if ( \is_wp_error( $response ) ) {
+			return new \WP_Error( 'api_error', $response->get_error_message(), array( 'status' => 500 ) );
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['data']['search'] ) ) {
+			return new \WP_REST_Response( array( 'icons' => array() ), 200 );
+		}
+
+		// Extract icon IDs.
+		$icons = array();
+		foreach ( $data['data']['search'] as $icon ) {
+			if ( isset( $icon['id'] ) ) {
+				$icons[] = $icon['id'];
+			}
+		}
+
+		return new \WP_REST_Response( array( 'icons' => $icons ), 200 );
+	}
+
+	} // End class WP_Font_Awesome_Settings
 
 	/**
 	 * Run the class if found.
 	 */
 	WP_Font_Awesome_Settings::instance();
-}
+} // End if ( ! class_exists( 'WP_Font_Awesome_Settings' ) )
 
 /**
  * Class aliases for backward compatibility.

@@ -153,19 +153,34 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 				// General Settings Section
 				[
 					'id'    => 'general',
-					'name'  => __( 'General Settings', 'font-awesome-settings' ),
+					'name'  => __( 'General Settings', 'ayecode-connect' ),
 					'icon'  => 'fa-solid fa-gear',
 					'fields' => [
+                        [
+                            'id'      => 'pro_link',
+                            'type'    => 'alert',
+                            'alert_type' => 'primary',
+                            'description' => '<div class="d-flex align-items-center justify-content-between fs-6">' . wp_sprintf(
+                                __( '%sGet Font Awesome Pro - unlock 30,000+ premium icons right inside your icon picker%s %s(affiliate link)%s %sGet Pro%s', 'ayecode-connect' ),
+                                    '<strong><i class="me-2 fa-solid fa-icons"></i>',
+                                    '</strong>',
+                                    '<span><span class="fs-xs text-secondary">',
+                                    '</span>',
+                                    '<a class="btn btn-sm btn-primary" target="_blank" href="https://fontawesome.com/referral?a=c9b89e1418">',
+                                    '<i class="ms-2 fas fa-external-link-alt"></i></a></span>',
+                            ) . '</div>',
+                            'show_if' => '[%pro%]==""',
+                        ],
 						[
 							'id'      => 'type',
 							'type'    => 'select',
-							'label'   => __( 'Loading Method', 'font-awesome-settings' ),
-							'description'    => __( 'Choose how to load Font Awesome.', 'font-awesome-settings' ),
+							'label'   => __( 'Loading Method', 'ayecode-connect' ),
+							'description'    => __( 'Choose how to load Font Awesome.', 'ayecode-connect' ),
 							'options' => [
-								'CSS' => __( 'CSS (default)', 'font-awesome-settings' ),
+								'CSS' => __( 'CSS (default)', 'ayecode-connect' ),
 								'JS'  => 'JS',
-								'KIT' => __( 'Kits (settings managed on fontawesome.com)', 'font-awesome-settings' ),
-								'SVG' => __( 'SVG - Inline Icons (No CSS/JS loaded on frontend)', 'font-awesome-settings' ),
+								'KIT' => __( 'Kits (settings managed on fontawesome.com)', 'ayecode-connect' ),
+								'SVG' => __( 'SVG - Inline Icons (No CSS/JS loaded on frontend)', 'ayecode-connect' ),
 							],
 							'default' => 'CSS',
 						],
@@ -173,15 +188,15 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 							'id'      => 'svg_info',
 							'type'    => 'alert',
 							'alert_type' => 'info',
-							'description' => __( '<strong>SVG Mode:</strong> Font Awesome CSS/JS files are NOT loaded on the frontend. Frontend icons must be rendered using <code>ayecode_get_icon()</code>. The backend automatically loads CSS for compatibility, so normal <code>&lt;i&gt;</code> tags work in admin areas.', 'font-awesome-settings' ),
+							'description' => __( '<strong>SVG Mode:</strong> Font Awesome CSS/JS files are NOT loaded on the frontend. Frontend icons must be rendered using <code>ayecode_get_icon()</code>. The backend automatically loads CSS for compatibility, so normal <code>&lt;i&gt;</code> tags work in admin areas.', 'ayecode-connect' ),
 							'show_if' => '[%type%]=="SVG"',
 						],
 						[
 							'id'          => 'kit-url',
 							'type'        => 'text',
-							'label'       => __( 'Kit URL', 'font-awesome-settings' ),
+							'label'       => __( 'Kit URL', 'ayecode-connect' ),
 							'description'        => wp_sprintf(
-								__( 'Requires a free account with Font Awesome. %sGet kit url%s', 'font-awesome-settings' ),
+								__( 'Requires a free account with Font Awesome. %sGet kit url%s', 'ayecode-connect' ),
 								'<a rel="noopener noreferrer" target="_blank" href="https://fontawesome.com/kits"><i class="fas fa-external-link-alt"></i> ',
 								'</a>'
 							),
@@ -195,13 +210,14 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 						[
 							'id'      => 'version',
 							'type'    => 'select',
-							'label'   => __( 'Version', 'font-awesome-settings' ),
-							'description'    => __( 'Select Font Awesome version.', 'font-awesome-settings' ),
+							'label'   => __( 'Version', 'ayecode-connect' ),
+							'description'    => __( 'Select Font Awesome version.', 'ayecode-connect' ),
+                            //@todo we need to simplify versioning, maybe 7.x, 6.x, 5.x..
 							'options' => array_merge(
-								[ '' => wp_sprintf( __( '%s (default)', 'font-awesome-settings' ), '6.7.2' ) ],
+								[ '' => wp_sprintf( __( '%s (default)', 'ayecode-connect' ), '6.7.2' ) ],
 								( $latest_version && version_compare( $latest_version, '7.0.0', '>' ) ) ? [ $latest_version => esc_html( $latest_version ) ] : [],
 								[
-									'7.0.0'  => '7.0.0',
+									'7.2.0'  => '7.2.0',
 									'6.4.2'  => '6.4.2',
 									'6.1.0'  => '6.1.0',
 									'6.0.0'  => '6.0.0',
@@ -221,12 +237,12 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 						[
 							'id'      => 'enqueue',
 							'type'    => 'select',
-							'label'   => __( 'Enqueue', 'font-awesome-settings' ),
-							'description'    => __( 'Where to load Font Awesome.', 'font-awesome-settings' ),
+							'label'   => __( 'Enqueue', 'ayecode-connect' ),
+							'description'    => __( 'Where to load Font Awesome.', 'ayecode-connect' ),
 							'options' => [
-								''         => __( 'Frontend + Backend (default)', 'font-awesome-settings' ),
-								'frontend' => __( 'Frontend', 'font-awesome-settings' ),
-								'backend'  => __( 'Backend', 'font-awesome-settings' ),
+								''         => __( 'Frontend + Backend (default)', 'ayecode-connect' ),
+								'frontend' => __( 'Frontend', 'ayecode-connect' ),
+								'backend'  => __( 'Backend', 'ayecode-connect' ),
 							],
 							'default' => '',
 							'show_if' => '[%type%]!="SVG"',
@@ -234,9 +250,9 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                         [
                             'id'      => 'pro',
                             'type'    => 'toggle',
-                            'label'   => __( 'Enable Pro Icons', 'font-awesome-settings' ),
+                            'label'   => __( 'Enable Pro Icons', 'ayecode-connect' ),
                             'description'    => wp_sprintf(
-                                __( 'Requires a subscription. %sLearn more%s  (affiliate link)', 'font-awesome-settings' ),
+                                __( 'Requires a subscription. %sLearn more%s  (affiliate link)', 'ayecode-connect' ),
                                 '<a rel="noopener noreferrer" target="_blank" href="https://fontawesome.com/referral?a=c9b89e1418">',
                                 ' <i class="fas fa-external-link-alt"></i></a>',
                             ),
@@ -247,105 +263,57 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                             'id'      => 'pro_info',
                             'type'    => 'alert',
                             'alert_type' => 'danger',
-                            'description' => __( '<strong>Warning</strong> Font Awesome Pro v6/7 requires the use of a <strong>KIT</strong> or <strong>SVG</strong>, please correct your loading method setting', 'font-awesome-settings' ),
+                            'description' => __( '<strong>Warning</strong> Font Awesome Pro v6/7 requires the use of a <strong>KIT</strong> or <strong>SVG</strong>, please correct your loading method setting', 'ayecode-connect' ),
                             'show_if' => '[%pro%] && ([%type%]!="KIT" && [%type%]!="SVG") && ( [%version%]>"5.999.0" || [%version%]=="" )',
                         ],
                         [
                             'id'      => 'api_key',
                             'type'    => 'password',
-                            'label'   => __( 'API Key', 'font-awesome-settings' ),
-                            'description'    => __( 'Enter your Font Awesome API Key', 'font-awesome-settings' ),
-                            'placeholder'    => __( 'Required if using v6/7', 'font-awesome-settings' ),
+                            'label'   => __( 'API Key', 'ayecode-connect' ),
+                            'description'    => __( 'Enter your Font Awesome API Key', 'ayecode-connect' ),
+                            'placeholder'    => __( 'Required if using v6/7', 'ayecode-connect' ),
                             'default' => '',
                             'show_if' => '[%pro%]',
+                            'extra_attributes' => ['required' => true]
                         ],
-
-                        [
-                            'id'      => 'auth_token',
-                            'type'    => 'text',
-                            'label'   => __( 'Auth Token', 'font-awesome-settings' ),
-//                            'description'    => __( 'Enter your Font Awesome API Key', 'font-awesome-settings' ),
-//                            'placeholder'    => __( 'Required if using v6/7', 'font-awesome-settings' ),
-                            'default' => '',
-                            'show_if' => '[%pro%]',
-                        ],
-
                         [
                             'id'      => 'local',
                             'type'    => 'toggle',
-                            'label'   => __( 'Load Fonts Locally', 'font-awesome-settings' ),
-                            'description'    => __( '(For free version only) Load FontAwesome fonts from locally. This downloads FontAwesome fonts from fontawesome.com & stores at the local site.', 'font-awesome-settings' ),
+                            'label'   => __( 'Load Fonts Locally', 'ayecode-connect' ),
+                            'description'    => __( '(For free version only) Load FontAwesome fonts from locally. This downloads FontAwesome fonts from fontawesome.com & stores at the local site.', 'ayecode-connect' ),
                             'default' => false,
                             'show_if' => '[%type%]!="KIT" && [%pro%]==""',
                         ],
-                        [
-                            'id'      => 'local_version',
-//                            'type'    => 'hidden',
-                            'type'    => 'text',
-                            'default' => '',
-                        ],
-                        [
-                            'id'      => 'local_icon_version',
-//                            'type'    => 'hidden',
-                            'type'    => 'text',
-                            'default' => '',
-                        ],
-                        [
-                            'id'      => 'local_icon_styles',
-                            'type'    => 'hidden',
-                            'default' => '',
-                        ],
-//                        [
-//                            'id'      => 'ver_info',
-//                            'type'    => 'alert',
-//                            'alert_type' => 'danger',
-//                            'description' => time(),
-////                            'description' => __( '<strong>Warning</strong> Font Awesome Pro v6/7 requires the use of a <strong>KIT</strong> or <strong>SVG</strong>, please correct your loading method setting', 'font-awesome-settings' ),
-////                            'show_if' => '[%pro%] && ([%type%]!="KIT" && [%type%]!="SVG") && ( [%version%]>"5.999.0" || [%version%]=="" )',
-//                        ],
-
-
-
 					],
 				],
-
-				// Pro & Local Settings Section
-//				[
-//					'id'    => 'pro_local',
-//					'name'  => __( 'Pro & Local Settings', 'font-awesome-settings' ),
-//					'icon'  => 'fa-solid fa-crown',
-//					'fields' => [
-//
-//					],
-//				],
 
 				// Compatibility Section
 				[
 					'id'    => 'compatibility',
-					'name'  => __( 'Compatibility', 'font-awesome-settings' ),
+					'name'  => __( 'Compatibility', 'ayecode-connect' ),
 					'icon'  => 'fa-solid fa-puzzle-piece',
 					'fields' => [
 						[
 							'id'      => 'shims',
 							'type'    => 'toggle',
-							'label'   => __( 'Enable v4 shims compatibility', 'font-awesome-settings' ),
-							'description'    => __( 'This enables v4 classes to work with v5, sort of like a band-aid until everyone has updated everything to v5.', 'font-awesome-settings' ),
+							'label'   => __( 'Enable v4 shims compatibility', 'ayecode-connect' ),
+							'description'    => __( 'This enables v4 classes to work with v5, sort of like a band-aid until everyone has updated everything to v5.', 'ayecode-connect' ),
 							'default' => false,
 							'show_if' => '[%type%]!="KIT"',
 						],
 						[
 							'id'      => 'js-pseudo',
 							'type'    => 'toggle',
-							'label'   => __( 'Enable JS pseudo elements (not recommended)', 'font-awesome-settings' ),
-							'description'    => __( 'Used only with the JS version, this will make pseudo-elements work but can be CPU intensive on some sites.', 'font-awesome-settings' ),
+							'label'   => __( 'Enable JS pseudo elements (not recommended)', 'ayecode-connect' ),
+							'description'    => __( 'Used only with the JS version, this will make pseudo-elements work but can be CPU intensive on some sites.', 'ayecode-connect' ),
 							'default' => false,
 							'show_if' => '[%type%]!="KIT"',
 						],
 						[
 							'id'      => 'dequeue',
 							'type'    => 'toggle',
-							'label'   => __( 'Dequeue', 'font-awesome-settings' ),
-							'description'    => __( 'This will try to dequeue any other Font Awesome versions loaded by other sources if they are added with `font-awesome` or `fontawesome` in the name.', 'font-awesome-settings' ),
+							'label'   => __( 'Dequeue', 'ayecode-connect' ),
+							'description'    => __( 'This will try to dequeue any other Font Awesome versions loaded by other sources if they are added with `font-awesome` or `fontawesome` in the name.', 'ayecode-connect' ),
 							'default' => false,
 						],
 					],
@@ -387,7 +355,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                                 'id'      => 'rename_info',
                                 'type'    => 'alert',
                                 'alert_type' => 'danger',
-                                'description' => __( 'Changing the icon identifier will break all current usage of the icon.', 'font-awesome-settings' ),
+                                'description' => __( 'Changing the icon identifier will break all current usage of the icon.', 'ayecode-connect' ),
                                 'show_if' => "[%id%] != null && [%id%] != ''"
                             ],
                             [
@@ -406,23 +374,23 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                             [
                                 'id'       => 'icon_code',
                                 'type'     => 'textarea',
-                                'label'    => __( 'Icon', 'geodirectory' ),
-                                'description' => __( 'SVG code only', 'geodirectory' ),
+                                'label'    => __( 'Icon', 'ayecode-connect' ),
+                                'description' => __( 'SVG code only', 'ayecode-connect' ),
                                 'show_if' => "[%icon_type%] == 'code' && ( [%id%] == null || [%id%] == '' )"
                             ],
                             [
                                 'id'       => 'icon_file',
                                 'type'     => 'file',
                                 'accept'   => '.svg,image/svg+xml',
-                                'label'    => __( 'Icon', 'geodirectory' ),
-                                'description' => __( 'SVG files only', 'geodirectory' ),
+                                'label'    => __( 'Icon', 'ayecode-connect' ),
+                                'description' => __( 'SVG files only', 'ayecode-connect' ),
                                 'show_if' => "[%icon_type%] == 'file' && ( [%id%] == null || [%id%] == '' )"
                             ],
                             [
                                 'id' => 'optimize',
                                 'type' => 'toggle',
-                                'label'    => __( 'Optimize as Dynamic UI Icon', 'geodirectory' ),
-                                'description' => __( 'Removes fixed colors and dimensions so the icon inherits your text color.', 'geodirectory' ),
+                                'label'    => __( 'Optimize as Dynamic UI Icon', 'ayecode-connect' ),
+                                'description' => __( 'Removes fixed colors and dimensions so the icon inherits your text color.', 'ayecode-connect' ),
                                 'default' => true,
                                 'show_if' => "[%id%] == null || [%id%] == ''"
                             ],
@@ -430,8 +398,8 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                                 'id'      => 'slug',
                                 'type'    => 'slug',
                                 'label'   => __( 'Identifier', 'ayecode-connect' ),
-                                'placeholder' => __( 'fishing-boat', 'geodirectory' ),
-                                'description' => __( 'This will be used to search and identify the icon later (lowercase, hyphen separated)', 'geodirectory' ),
+                                'placeholder' => __( 'fishing-boat', 'ayecode-connect' ),
+                                'description' => __( 'This will be used to search and identify the icon later (lowercase, hyphen separated)', 'ayecode-connect' ),
                                 'extra_attributes' => ['required' => true]
                             ]
                         ]
@@ -503,13 +471,13 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                 // Code input mode
                 $svg_code = ! empty( $data['icon_code'] ) ? $data['icon_code'] : '';
                 if ( empty( $svg_code ) ) {
-                    wp_send_json_error( [ 'message' => __( 'SVG code is required.', 'font-awesome-settings' ) ] );
+                    wp_send_json_error( [ 'message' => __( 'SVG code is required.', 'ayecode-connect' ) ] );
                 }
                 $result = $custom_icons->upload_icon( $svg_code, $slug, $optimize, true );
             } else {
                 // File upload mode
                 if ( empty( $_FILES['icon_file'] ) ) {
-                    wp_send_json_error( [ 'message' => __( 'No file uploaded.', 'font-awesome-settings' ) ] );
+                    wp_send_json_error( [ 'message' => __( 'No file uploaded.', 'ayecode-connect' ) ] );
                 }
                 $result = $custom_icons->upload_icon( $_FILES['icon_file'], $slug, $optimize, false );
             }
@@ -531,7 +499,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 
             // Validate required fields
             if ( empty( $old_slug ) || empty( $new_slug ) ) {
-                wp_send_json_error( [ 'message' => __( 'Missing required fields.', 'font-awesome-settings' ) ] );
+                wp_send_json_error( [ 'message' => __( 'Missing required fields.', 'ayecode-connect' ) ] );
             }
 
             // Update icon using helper class
@@ -554,7 +522,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 
             // Validate required field
             if ( empty( $slug ) ) {
-                wp_send_json_error( [ 'message' => __( 'Missing icon identifier.', 'font-awesome-settings' ) ] );
+                wp_send_json_error( [ 'message' => __( 'Missing icon identifier.', 'ayecode-connect' ) ] );
             }
 
             // Delete icon using helper class
@@ -567,7 +535,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             }
 
             // Return success message
-            wp_send_json_success( [ 'message' => __( 'Icon deleted successfully.', 'font-awesome-settings' ) ] );
+            wp_send_json_success( [ 'message' => __( 'Icon deleted successfully.', 'ayecode-connect' ) ] );
 
         } elseif ('bulk_icon_action' === $tool_action) {
 
@@ -578,11 +546,11 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 
             // Validate required fields
             if ( empty( $item_ids ) || ! is_array( $item_ids ) ) {
-                wp_send_json_error( [ 'message' => __( 'No icons selected.', 'font-awesome-settings' ) ] );
+                wp_send_json_error( [ 'message' => __( 'No icons selected.', 'ayecode-connect' ) ] );
             }
 
             if ( empty( $action ) ) {
-                wp_send_json_error( [ 'message' => __( 'No action specified.', 'font-awesome-settings' ) ] );
+                wp_send_json_error( [ 'message' => __( 'No action specified.', 'ayecode-connect' ) ] );
             }
 
             // Process bulk action
@@ -598,7 +566,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 
                     if ( is_wp_error( $result ) ) {
                         $error_count++;
-                        $errors[] = sprintf( __( '%s: %s', 'font-awesome-settings' ), $slug, $result->get_error_message() );
+                        $errors[] = sprintf( __( '%s: %s', 'ayecode-connect' ), $slug, $result->get_error_message() );
                     } else {
                         $success_count++;
                     }
@@ -615,23 +583,23 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
                 // Build response message
                 if ( $success_count > 0 && $error_count === 0 ) {
                     $message = sprintf(
-                        _n( '%d icon deleted successfully.', '%d icons deleted successfully.', $success_count, 'font-awesome-settings' ),
+                        _n( '%d icon deleted successfully.', '%d icons deleted successfully.', $success_count, 'ayecode-connect' ),
                         $success_count
                     );
                     wp_send_json_success( [ 'message' => $message ] );
                 } elseif ( $success_count > 0 && $error_count > 0 ) {
                     $message = sprintf(
-                        __( '%1$d icon(s) deleted successfully. %2$d failed: %3$s', 'font-awesome-settings' ),
+                        __( '%1$d icon(s) deleted successfully. %2$d failed: %3$s', 'ayecode-connect' ),
                         $success_count,
                         $error_count,
                         implode( ', ', $errors )
                     );
                     wp_send_json_success( [ 'message' => $message ] );
                 } else {
-                    wp_send_json_error( [ 'message' => __( 'Failed to delete icons: ', 'font-awesome-settings' ) . implode( ', ', $errors ) ] );
+                    wp_send_json_error( [ 'message' => __( 'Failed to delete icons: ', 'ayecode-connect' ) . implode( ', ', $errors ) ] );
                 }
             } else {
-                wp_send_json_error( [ 'message' => sprintf( __( 'Unknown bulk action: %s', 'font-awesome-settings' ), $action ) ] );
+                wp_send_json_error( [ 'message' => sprintf( __( 'Unknown bulk action: %s', 'ayecode-connect' ), $action ) ] );
             }
         } elseif ( 'clear_icon_cache' === $tool_action ) {
             // Clear the icon cache.
@@ -641,7 +609,7 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
             if ( \is_wp_error( $result ) ) {
                 wp_send_json_error( [ 'message' => $result->get_error_message() ] );
             } else {
-                wp_send_json_success( [ 'message' => __( 'Icon cache cleared successfully.', 'font-awesome-settings' ) ] );
+                wp_send_json_success( [ 'message' => __( 'Icon cache cleared successfully.', 'ayecode-connect' ) ] );
             }
         }
 

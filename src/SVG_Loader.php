@@ -50,7 +50,7 @@ class SVG_Loader {
 	 */
 	private $available_styles = array(
 		'free' => array( 'solid', 'regular', 'brands' ),
-		'pro'  => array( 'solid', 'regular', 'light', 'thin', 'duotone', 'brands', 'sharp-solid', 'sharp-regular' ),
+		'pro'  => array( 'solid', 'regular', 'light', 'thin', 'duotone', 'brands', 'sharp-solid', 'sharp-regular', 'sharp-light', 'sharp-thin', 'sharp-duotone-solid', 'sharp-duotone-regular', 'sharp-duotone-light', 'sharp-duotone-thin' ),
 	);
 
 	/**
@@ -148,7 +148,7 @@ class SVG_Loader {
 			// Fetch from remote.
 			$version = $this->settings_instance->settings['version'] ?: $this->settings_instance->get_latest_version();
 			$svg     = $this->fetch_from_remote( $style, $name, $version, $type, $family, $weight );
-
+//echo '###';print_r($svg);exit;
 			// Release the lock.
 			$this->release_fetch_lock( $cache_key );
 
@@ -250,7 +250,7 @@ class SVG_Loader {
 			// Full format: Parse using family/weight extraction.
 			// Define known family and weight classes.
 			// Note: fa-duotone can be BOTH a family class OR a weight class depending on context.
-			$family_only_classes = array( 'fa-sharp', 'fa-sharp-duotone' );
+			$family_only_classes = array( 'fa-sharp', 'fa-sharp-duotone', 'fa-brands' );
 			$weight_only_classes = array( 'fa-solid', 'fa-regular', 'fa-light', 'fa-thin' );
 			$duotone_class = 'fa-duotone';
 
@@ -310,12 +310,16 @@ class SVG_Loader {
 			// Map family + weight to filesystem style.
 			// Sharp family: sharp-solid, sharp-regular, sharp-light, sharp-thin
 			// Duotone family: duotone (single style, weight ignored for filesystem)
-			// Sharp-duotone family: sharp-duotone (single style, weight ignored for filesystem)
+			// Sharp-duotone family: sharp-duotone-solid (combines with weight)
+			// Brands family: brands (single style, weight ignored)
 			// Classic family (no family class): solid, regular, light, thin, duotone
 
-			if ( 'brands' === $icon_name || ( null === $family && null === $weight ) ) {
-				// Brands or invalid - default to solid for classic.
-				$style = $weight ?: 'solid';
+			if ( 'brands' === $family ) {
+				// Brands family: single style.
+				$style = 'brands';
+			} elseif ( null === $family && null === $weight ) {
+				// No family or weight - default to solid for classic.
+				$style = 'solid';
 			} elseif ( 'sharp' === $family ) {
 				// Sharp family: combine with weight (sharp-solid, sharp-regular, etc).
 				$weight = $weight ?: 'solid';
@@ -324,8 +328,9 @@ class SVG_Loader {
 				// Duotone family: single style (weight is ignored for filesystem lookup).
 				$style = 'duotone';
 			} elseif ( 'sharp-duotone' === $family ) {
-				// Sharp-duotone family: single style (weight is ignored for filesystem lookup).
-				$style = 'sharp-duotone';
+				// Sharp-duotone family: combine with weight (sharp-duotone-solid).
+				$weight = $weight ?: 'solid';
+				$style = 'sharp-duotone-' . $weight;
 			} else {
 				// Classic family (no family class): use weight directly.
 				$style = $weight ?: 'solid';
@@ -426,7 +431,7 @@ class SVG_Loader {
 			$endpoint
 		);
 
-//        echo '###'.$url;exit
+//        echo '###'.$url;exit;
 		// Fetch via wp_remote_get.
 		$response = wp_remote_get(
 			$url,
@@ -482,6 +487,7 @@ class SVG_Loader {
 			'sharp'         => 'SHARP',
 			'duotone'       => 'DUOTONE',
 			'sharp-duotone' => 'SHARP_DUOTONE',
+			'brands'        => 'BRANDS',
 			null            => 'CLASSIC', // Default to classic if no family.
 		);
 
@@ -495,10 +501,10 @@ class SVG_Loader {
 			null      => 'SOLID', // Default to solid if no weight.
 		);
 
-		// Special handling for brands.
-		if ( 'brands' === $style ) {
-			$graphql_family = 'BRANDS';
-			$graphql_style  = 'REGULAR';
+		// Special handling for brands: family=CLASSIC, style=BRANDS
+		if ( 'brands' === $style || 'brands' === $family ) {
+			$graphql_family = 'CLASSIC';
+			$graphql_style  = 'BRANDS';
 		} else {
 			$graphql_family = isset( $family_map[ $family ] ) ? $family_map[ $family ] : 'CLASSIC';
 			$graphql_style  = isset( $weight_map[ $weight ] ) ? $weight_map[ $weight ] : 'SOLID';
