@@ -65,7 +65,7 @@ if ( ! class_exists( 'WP_Font_Awesome_Settings' ) ) {
 		 *
 		 * @var string
 		 */
-		public $version = '2.0.0';
+		public $version = '3.0.1-beta';
 
 		/**
 		 * Class textdomain.
