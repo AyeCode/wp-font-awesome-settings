@@ -1,19 +1,11 @@
 <?php
 /**
- * Plugin Name: WP AyeCode [Package Name]
- * Plugin URI: https://ayecode.io/
- * Description: [Short description of what this package does.]
- * Version: 1.0.0
- * Author: AyeCode Ltd
- * Author URI: https://ayecode.io/
- * License: GPL-2.0+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain: wp-ayecode-[package-name]
- * Domain Path: /languages
- * Requires at least: 5.0
- * Requires PHP: 7.4
+ * AyeCode Package Loader (v1.0.0)
  *
- * @package WP_AyeCode_[PackageName]
+ * Handles version negotiation, PSR-4 autoloading, and bootstrapping for AyeCode packages.
+ * Shared across all copies of the package (standalone plugin install + composer dependency).
+ *
+ * Do NOT edit below the configuration block.
  */
 
 // Exit if accessed directly.
@@ -31,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	// Convention: ayecode_{package_slug}_registry  (use underscores, lowercase)
 	$registry_key = 'ayecode_[package_slug]_registry';
 
-	// Must match the Version header above. This is what drives negotiation.
+	// Must match the Version header in the main plugin file. This drives negotiation.
 	$this_version = '1.0.0';
 
 	$this_path = dirname( __FILE__ );
