@@ -1,6 +1,6 @@
 {
   "name": "ayecode/wp-font-awesome-settings",
-  "version": "3.0.1-beta",
+  "version": "3.0.2-beta",
   "type": "library",
   "description": "Settings page for Font Awesome in WordPress",
   "keywords": ["font-awesome","fontawesome"],
@@ -20,12 +20,8 @@
     "enshrined/svg-sanitize": "^0.22"
   },
   "autoload": {
-    "psr-4": {
-      "AyeCode\\FontAwesome\\": "src/"
-    },
     "files": [
-      "wp-font-awesome-settings.php",
-      "src/functions.php"
+      "package-loader.php"
     ]
   },
   "config": {
