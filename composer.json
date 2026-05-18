@@ -1,6 +1,6 @@
 {
   "name": "ayecode/wp-font-awesome-settings",
-  "version": "3.0.2-beta",
+  "version": "3.0.3-beta",
   "type": "library",
   "description": "Settings page for Font Awesome in WordPress",
   "keywords": ["font-awesome","fontawesome"],

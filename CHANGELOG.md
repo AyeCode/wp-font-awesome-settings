@@ -2,6 +2,9 @@
 
 All notable changes to the AyeCode Font Awesome Settings will be documented in this file.
 
+## [3.0.3-beta] - 2026-05-18
+- Added `title` as a allowed param for `ayecode_icon()` - ADDED
+
 ## [3.0.2-beta] - 2026-04-22
 - Changed to new AyeCode package autoloader standards - CHANGED
 

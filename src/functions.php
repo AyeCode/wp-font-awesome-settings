@@ -32,6 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *       'aria_label' => 'User Profile',
  *       'width' => '24',
  *       'height' => '24',
+ *       'title' => 'User Profile',
  *       'force_svg' => true, // Force SVG output regardless of Type setting
  *   ) );
  *

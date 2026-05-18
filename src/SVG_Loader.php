@@ -809,6 +809,7 @@ class SVG_Loader {
 	 */
 	private function apply_svg_options( string $svg, array $options ): string {
 		$defaults = array(
+			'title'		 => '',
 			'class'      => '',
 			'aria_label' => '',
 			'width'      => '',
@@ -821,6 +822,11 @@ class SVG_Loader {
 
 		// Build attributes array.
 		$attributes = array();
+
+		// Add title
+		if ( ! empty( $options['title'] ) ) {
+			$attributes['title'] = esc_attr( $options['title'] );
+		}
 
 		// Add classes (always include base aui-icon class).
 		$base_classes = array( 'aui-icon' );
@@ -836,8 +842,14 @@ class SVG_Loader {
 			$attributes['aria-label'] = esc_attr( $options['aria_label'] );
 
 			// Inject title tag for accessibility.
-			$title = '<title>' . esc_html( $options['aria_label'] ) . '</title>';
-			$svg = preg_replace( '/(<svg[^>]*>)/', '$1' . $title, $svg, 1 );
+			$inner_title = '<title>' . esc_html( $options['aria_label'] ) . '</title>';
+			$svg = preg_replace( '/(<svg[^>]*>)/', '$1' . $inner_title, $svg, 1 );
+		} elseif ( ! empty( $options['title'] ) ) {
+			$attributes['role'] = 'img';
+
+			// Inject title tag inside SVG for tooltip and accessibility.
+			$inner_title = '<title>' . esc_html( $options['title'] ) . '</title>';
+			$svg = preg_replace( '/(<svg[^>]*>)/', '$1' . $inner_title, $svg, 1 );
 		} else {
 			$attributes['aria-hidden'] = 'true';
 		}
