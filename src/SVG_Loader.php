@@ -83,7 +83,7 @@ class SVG_Loader {
 	 * Constructor.
 	 */
 	private function __construct() {
-		$this->settings_instance = \WP_Font_Awesome_Settings::instance();
+		$this->settings_instance = \AyeCode\FontAwesome\Font_Awesome::instance();
 	}
 
 	/**
@@ -340,7 +340,7 @@ class SVG_Loader {
 		}
 
 		// Determine if Pro or Free based on style.
-		$is_pro = $this->settings_instance->settings['pro'] && in_array( $style, $this->available_styles['pro'], true );
+		$is_pro = ( \AyeCode\FontAwesome\Font_Awesome::instance()->get_settings()['pro'] ?? false ) && in_array( $style, $this->available_styles['pro'], true );
 		$type   = $is_pro ? 'pro' : 'free';
 
 		// Validate style.

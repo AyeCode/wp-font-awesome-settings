@@ -42,7 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return string Icon markup (SVG or <i> tag) or empty string on failure.
  */
 function ayecode_get_icon( string $identifier, array $options = array() ): string {
-    $settings = WP_Font_Awesome_Settings::instance()->settings;
+    $settings = (array) \AyeCode\FontAwesome\Font_Awesome::instance()->get_settings();
 
     // Parse identifier first to check if it's a custom icon
     $parsed = \AyeCode\FontAwesome\SVG_Loader::instance()->parse_identifier( $identifier );
@@ -259,7 +259,7 @@ function ayecode_get_custom_icons_url() {
  * @return string The Font Awesome type: 'CSS', 'JS', 'KIT', or 'SVG'. Defaults to 'CSS'.
  */
 function ayecode_get_fa_mode() {
-	$settings = WP_Font_Awesome_Settings::instance()->get_settings();
+	$settings = (array) \AyeCode\FontAwesome\Font_Awesome::instance()->get_settings();
 	return ! empty( $settings['type'] ) ? $settings['type'] : 'CSS';
 }
 
@@ -290,7 +290,7 @@ function ayecode_is_fa_svg_mode() {
  * @return array Complete Font Awesome settings array.
  */
 function ayecode_get_fa_settings() {
-	return WP_Font_Awesome_Settings::instance()->get_settings();
+	return \AyeCode\FontAwesome\Font_Awesome::instance()->get_settings();
 }
 
 /**
