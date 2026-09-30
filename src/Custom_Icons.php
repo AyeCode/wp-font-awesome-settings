@@ -475,6 +475,9 @@ class Custom_Icons {
 		// Use enshrined/svg-sanitize library for secure sanitization
 		$sanitizer = new \enshrined\svgSanitize\Sanitizer();
 		$sanitizer->removeRemoteReferences( true );
+		// Output is inlined in HTML, so drop the XML declaration and collapse whitespace.
+		$sanitizer->removeXMLTag( true );
+		$sanitizer->minify( true );
 
 		$sanitized_svg = $sanitizer->sanitize( $svg );
 

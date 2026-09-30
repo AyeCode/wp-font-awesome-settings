@@ -2,6 +2,9 @@
 
 All notable changes to the AyeCode Font Awesome Settings will be documented in this file.
 
+## [3.0.4-beta] - 2026-TBD
+- Inline SVG icons no longer include the XML declaration and are minified - FIXED
+
 ## [3.0.3-beta] - 2026-05-18
 - Added `title` as a allowed param for `ayecode_icon()` - ADDED
 
