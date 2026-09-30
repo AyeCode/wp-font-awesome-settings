@@ -3,7 +3,7 @@
  * Plugin Name: WP Font Awesome Settings
  * Plugin URI:  https://github.com/AyeCode/wp-font-awesome-settings
  * Description: Manage Font Awesome loading and settings in WordPress.
- * Version:     3.0.3-beta
+ * Version:     3.0.4-beta
  * Author:      AyeCode Ltd
  * Author URI:  https://ayecode.io/
  * License:     GPL-3.0-or-later

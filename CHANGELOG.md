@@ -2,7 +2,7 @@
 
 All notable changes to the AyeCode Font Awesome Settings will be documented in this file.
 
-## [3.0.4-beta] - 2026-TBD
+## [3.0.4-beta] - 2026-09-30
 - Inline SVG icons no longer include the XML declaration and are minified - FIXED
 
 ## [3.0.3-beta] - 2026-05-18
