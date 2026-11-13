@@ -185,6 +185,24 @@ class SVG_Loader {
 	 * @return array|WP_Error Parsed components or error.
 	 */
 	public function parse_identifier( string $identifier ) {
+		// The same identifier is parsed for every icon that uses it, several times per
+		// icon, so the result is kept for the request.
+		static $parsed = array();
+
+		if ( ! isset( $parsed[ $identifier ] ) ) {
+			$parsed[ $identifier ] = $this->parse_identifier_uncached( $identifier );
+		}
+
+		return $parsed[ $identifier ];
+	}
+
+	/**
+	 * Parse an icon identifier.
+	 *
+	 * @param string $identifier Icon identifier.
+	 * @return array|\WP_Error Parsed parts, or an error for an identifier that is not an icon.
+	 */
+	private function parse_identifier_uncached( string $identifier ) {
 		$identifier = trim( $identifier );
 
 		// Check for custom icon format: 'aui-icon-{name}'.

@@ -38,6 +38,16 @@ class Font_Awesome {
 	public $textdomain = 'ayecode-connect';
 
 	/**
+	 * The raw option that $settings was built from.
+	 *
+	 * Every icon on a page asks for the settings, so get_settings() builds them once
+	 * per request and again only when the stored option changes within it.
+	 *
+	 * @var mixed
+	 */
+	private $settings_source = null;
+
+	/**
 	 * Latest version of Font Awesome at time of publish published.
 	 *
 	 * @var string
@@ -362,6 +372,11 @@ class Font_Awesome {
 	 */
 	public function get_settings() {
 		$db_settings = get_option( 'wp-font-awesome-settings' );
+
+		if ( is_array( $this->settings ) && $db_settings === $this->settings_source ) {
+			return $this->settings;
+		}
+		$this->settings_source = $db_settings;
 
 		$defaults = array(
 			'type'          => 'CSS', // type to use, CSS or JS or KIT

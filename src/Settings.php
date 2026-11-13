@@ -182,7 +182,9 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 								'KIT' => __( 'Kits (settings managed on fontawesome.com)', 'ayecode-connect' ),
 								'SVG' => __( 'SVG - Inline Icons (No CSS/JS loaded on frontend)', 'ayecode-connect' ),
 							],
-							'default' => 'CSS',
+							// The effective type, so a default a theme sets through the settings
+							// filter (BlockStrap defaults to SVG) shows as the selected value.
+							'default' => ayecode_get_fa_mode(),
 						],
 						[
 							'id'      => 'svg_info',
@@ -200,12 +202,11 @@ class WP_Font_Awesome_Settings_Framework extends \AyeCode\SettingsFramework\Sett
 								'<a rel="noopener noreferrer" target="_blank" href="https://fontawesome.com/kits"><i class="fas fa-external-link-alt"></i> ',
 								'</a>'
 							),
-                            'extra_attributes' => [
-                                'required' => true
-                            ],
 							'placeholder' => 'https://kit.fontawesome.com/123abc.js',
 							'default'     => '',
-							'show_if' => '[%type%]=="KIT" || [%type%]=="SVG"',
+							// SVG mode fetches free icons from the CDN and Pro icons through the API key;
+							// the kit is only used for the admin's Pro icons, so ask for it only then.
+							'show_if' => '[%type%]=="KIT" || ([%type%]=="SVG" && [%pro%])',
 						],
 						[
 							'id'      => 'version',

@@ -105,6 +105,11 @@ function ayecode_get_icon( string $identifier, array $options = array() ): strin
 
     $attrs = array( 'class' => implode( ' ', $classes ) );
 
+    // Add title (the SVG path puts it in a <title> element; the <i> tag takes the attribute)
+    if ( ! empty( $options['title'] ) ) {
+        $attrs['title'] = $options['title'];
+    }
+
     // Add aria attributes
     if ( ! empty( $options['aria_label'] ) ) {
         $attrs['aria-label'] = $options['aria_label'];
